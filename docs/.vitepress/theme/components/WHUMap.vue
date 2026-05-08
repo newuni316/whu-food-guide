@@ -338,14 +338,15 @@ onMounted(async () => {
   // Zoom control top-right
   L.control.zoom({ position: 'topright' }).addTo(map)
 
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  L.tileLayer('https://wprd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+    subdomains: ['1', '2', '3', '4'],
+    attribution: '&copy; 高德地图',
     maxZoom: 19,
   }).addTo(map)
 
   // Load areaGroups dynamically from areas.json
   try {
-    const areasResp = await fetch('/areas.json')
+    const areasResp = await fetch(import.meta.env.BASE_URL + 'areas.json')
     const areasData = await areasResp.json()
     if (Array.isArray(areasData) && areasData.length > 0) {
       areaGroups.value = areasData
@@ -355,7 +356,7 @@ onMounted(async () => {
   }
 
   try {
-    const resp = await fetch('/markers.json')
+    const resp = await fetch(import.meta.env.BASE_URL + 'markers.json')
     const markers: MarkerItem[] = await resp.json()
     totalCount.value = markers.length
 
@@ -773,5 +774,92 @@ onUnmounted(() => {
 :deep(.custom-marker-icon) {
   background: none !important;
   border: none !important;
+}
+</style>
+
+<style>
+/* Dark mode - non-scoped so html.dark selectors work */
+html.dark .whu-map-wrapper .leaflet-tile-pane {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
+
+html.dark .whu-map-wrapper .leaflet-control-zoom a {
+  background: #2a2a2a;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+html.dark .filter-panel {
+  background: rgba(30, 30, 30, 0.97);
+}
+
+html.dark .panel-title {
+  color: #e0e0e0;
+}
+
+html.dark .filter-label {
+  color: #aaa;
+}
+
+html.dark .checkbox-item {
+  color: #ccc;
+}
+
+html.dark .search-input {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+html.dark .search-results {
+  background: #2a2a2a;
+}
+
+html.dark .search-result-item:hover {
+  background: #333;
+}
+
+html.dark .result-name {
+  color: #e0e0e0;
+}
+
+html.dark .map-legend {
+  background: rgba(30, 30, 30, 0.95);
+}
+
+html.dark .legend-title {
+  color: #ccc;
+}
+
+html.dark .legend-item {
+  color: #bbb;
+}
+
+html.dark .fit-btn {
+  background: rgba(30, 30, 30, 0.95);
+  color: #e0e0e0;
+}
+
+html.dark .rating-btn {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #ccc;
+}
+
+html.dark .rating-btn.active {
+  background: #3a2a00;
+  border-color: #f5a623;
+  color: #ffa726;
+}
+
+html.dark .whu-popup .leaflet-popup-content-wrapper {
+  background: #2a2a2a;
+  color: #e0e0e0;
+}
+
+html.dark .reset-btn {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #ccc;
 }
 </style>

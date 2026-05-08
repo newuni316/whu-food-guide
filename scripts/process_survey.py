@@ -77,9 +77,21 @@ def parse_coordinates(raw: str) -> dict | None:
     if len(parts) != 2:
         return None
     try:
-        return {"lat": float(parts[0]), "lng": float(parts[1])}
+        lat = float(parts[0])
+        lng = float(parts[1])
     except ValueError:
         return None
+
+    # 武大周边包围盒校验 (lat: 30.50~30.60, lng: 114.30~114.40)
+    WHU_BOUNDS = {"lat_min": 30.50, "lat_max": 30.60, "lng_min": 114.30, "lng_max": 114.40}
+    if not (WHU_BOUNDS["lat_min"] <= lat <= WHU_BOUNDS["lat_max"]):
+        print(f"  [WARN] 纬度 {lat} 超出武大范围 ({WHU_BOUNDS['lat_min']}~{WHU_BOUNDS['lat_max']})，已丢弃")
+        return None
+    if not (WHU_BOUNDS["lng_min"] <= lng <= WHU_BOUNDS["lng_max"]):
+        print(f"  [WARN] 经度 {lng} 超出武大范围 ({WHU_BOUNDS['lng_min']}~{WHU_BOUNDS['lng_max']})，已丢弃")
+        return None
+
+    return {"lat": lat, "lng": lng}
 
 
 def rating_stars(rating: float) -> str:

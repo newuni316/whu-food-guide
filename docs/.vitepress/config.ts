@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
+  base: '/whu-food-guide/',
   title: '珞珈美食指北',
   description: '武汉大学美食攻略与推荐',
   themeConfig: {

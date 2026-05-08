@@ -31,7 +31,7 @@ const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const res = await fetch('/markers.json')
+    const res = await fetch(import.meta.env.BASE_URL + 'markers.json')
     if (res.ok) allMarkers.value = await res.json()
   } catch {}
   loading.value = false
