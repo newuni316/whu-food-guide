@@ -8,7 +8,7 @@ export default defineConfig({
       provider: 'local'
     },
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/whu-food-guide' }
+      { icon: 'github', link: 'https://github.com/newuni316/whu-food-guide' }
     ],
     nav: [
       { text: '首页', link: '/' },
@@ -25,14 +25,16 @@ export default defineConfig({
         text: '周边商圈',
         items: [
           { text: '广八路', link: '/surroundings/guangbalu/' },
-          { text: '东湖新村', link: '/surroundings/donghuxincun/' },
-          { text: '银泰', link: '/surroundings/yintai/' },
-          { text: '群光', link: '/surroundings/qunguang/' },
-          { text: '乐天城', link: '/surroundings/letiancheng/' },
-          { text: '未来城', link: '/surroundings/weilaicheng/' },
-          { text: '四眼井', link: '/surroundings/siyanjing/' },
           { text: '街道口', link: '/surroundings/jiedaokou/' },
           { text: '商圈总览', link: '/surroundings/' }
+        ]
+      },
+      {
+        text: '排行榜',
+        items: [
+          { text: '🏆 口碑 Top 10', link: '/rankings/top10' },
+          { text: '💕 约会必去榜', link: '/rankings/date-night' },
+          { text: '⚠️ 避雷专区', link: '/rankings/avoid' }
         ]
       },
       { text: '地图总览', link: '/map' },
@@ -77,13 +79,17 @@ export default defineConfig({
           items: [
             { text: '商圈总览', link: '/surroundings/' },
             { text: '广八路', link: '/surroundings/guangbalu/' },
-            { text: '东湖新村', link: '/surroundings/donghuxincun/' },
-            { text: '银泰', link: '/surroundings/yintai/' },
-            { text: '群光', link: '/surroundings/qunguang/' },
-            { text: '乐天城', link: '/surroundings/letiancheng/' },
-            { text: '未来城', link: '/surroundings/weilaicheng/' },
-            { text: '四眼井', link: '/surroundings/siyanjing/' },
             { text: '街道口', link: '/surroundings/jiedaokou/' }
+          ]
+        }
+      ],
+      '/rankings/': [
+        {
+          text: '排行榜',
+          items: [
+            { text: '🏆 口碑 Top 10', link: '/rankings/top10' },
+            { text: '💕 约会必去榜', link: '/rankings/date-night' },
+            { text: '⚠️ 避雷专区', link: '/rankings/avoid' }
           ]
         }
       ]

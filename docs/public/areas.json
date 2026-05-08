@@ -1,0 +1,46 @@
+[
+  {
+    "key": "wenli",
+    "label": "文理学部",
+    "color": "#e53935",
+    "areas": [
+      "枫园",
+      "桂园",
+      "梅园",
+      "樱园"
+    ]
+  },
+  {
+    "key": "gongxue",
+    "label": "工学部",
+    "color": "#1e88e5",
+    "areas": [
+      "工学部"
+    ]
+  },
+  {
+    "key": "xinxi",
+    "label": "信息学部",
+    "color": "#43a047",
+    "areas": [
+      "信息学部"
+    ]
+  },
+  {
+    "key": "yixue",
+    "label": "医学部",
+    "color": "#fb8c00",
+    "areas": [
+      "医学部"
+    ]
+  },
+  {
+    "key": "zhoubian",
+    "label": "周边商圈",
+    "color": "#8e24aa",
+    "areas": [
+      "广八路",
+      "街道口"
+    ]
+  }
+]

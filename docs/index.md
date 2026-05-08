@@ -36,3 +36,7 @@ features:
     title: 东湖新村
     details: 东湖边的宝藏村落，烧烤牛肉面、深夜烟火气
     link: /surroundings/donghuxincun/
+  - icon: 🗺️
+    title: 周边商圈总览
+    details: 广八路、东湖新村、银泰、群光、街道口...一站式浏览所有周边美食
+    link: /surroundings/

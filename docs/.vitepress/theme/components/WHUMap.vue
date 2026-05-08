@@ -119,6 +119,8 @@ interface MarkerItem {
   area: string
   avg_price?: number
   recommendation?: string
+  image_url?: string
+  feedback_url?: string
 }
 
 // --- Area color configuration ---
@@ -129,23 +131,25 @@ interface AreaGroup {
   areas: string[]
 }
 
-const areaGroups: AreaGroup[] = [
+const defaultAreaGroups: AreaGroup[] = [
   { key: 'wenli', label: '文理学部', color: '#e53935', areas: ['梅园', '桂园', '枫园', '樱园'] },
   { key: 'gongxue', label: '工学部', color: '#1e88e5', areas: ['工学部'] },
   { key: 'xinxi', label: '信息学部', color: '#43a047', areas: ['信息学部'] },
   { key: 'yixue', label: '医学部', color: '#fb8c00', areas: ['医学部'] },
-  { key: 'zhoubian', label: '周边商圈', color: '#8e24aa', areas: ['八一路', '广埠屯', '街道口', '广八路', '东湖新村', '银泰', '群光', '乐天城', '未来城', '四眼井'] },
+  { key: 'zhoubian', label: '周边商圈', color: '#8e24aa', areas: ['广八路', '街道口'] },
 ]
 
+const areaGroups = ref<AreaGroup[]>(defaultAreaGroups)
+
 function getAreaColor(area: string): string {
-  for (const group of areaGroups) {
+  for (const group of areaGroups.value) {
     if (group.areas.includes(area)) return group.color
   }
   return '#757575'
 }
 
 function getAreaKey(area: string): string {
-  for (const group of areaGroups) {
+  for (const group of areaGroups.value) {
     if (group.areas.includes(area)) return group.key
   }
   return 'other'
@@ -205,8 +209,13 @@ function buildPopupContent(item: MarkerItem): string {
       </div>`
     : ''
 
+  const imgHtml = item.image_url
+    ? `<img src="${item.image_url}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:8px;" onerror="this.style.display='none'" />`
+    : ''
+
   return `
     <div style="min-width:200px;max-width:280px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+      ${imgHtml}
       <div style="
         font-size:16px;
         font-weight:700;
@@ -315,10 +324,22 @@ onMounted(async () => {
   // Zoom control top-right
   L.control.zoom({ position: 'topright' }).addTo(map)
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  L.tileLayer('http://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+    subdomains: ['1', '2', '3', '4'],
+    attribution: '&copy; 高德地图',
     maxZoom: 19,
   }).addTo(map)
+
+  // Load areaGroups dynamically from areas.json
+  try {
+    const areasResp = await fetch('/areas.json')
+    const areasData = await areasResp.json()
+    if (Array.isArray(areasData) && areasData.length > 0) {
+      areaGroups.value = areasData
+    }
+  } catch {
+    // use default areaGroups
+  }
 
   try {
     const resp = await fetch('/markers.json')

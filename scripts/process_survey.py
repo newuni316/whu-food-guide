@@ -6,6 +6,7 @@ Reads data/mock_survey_data.csv and generates:
   2. public/markers.json for map integration
 """
 
+import argparse
 import os
 import re
 import json
@@ -34,13 +35,24 @@ LOCATION_MAP = {
     "医学部":       "yixue",
     "街道口":       "surroundings/jiedaokou",
     "广八路":       "surroundings/guangbalu",
-    "东湖新村":     "surroundings/donghuxincun",
-    "银泰":         "surroundings/yintai",
-    "群光":         "surroundings/qunguang",
-    "乐天城":       "surroundings/letiancheng",
-    "未来城":       "surroundings/weilaicheng",
-    "四眼井":       "surroundings/siyanjing",
 }
+
+# Location → area group key mapping
+AREA_KEY_MAP = {
+    "文理学部-梅园": "wenli",
+    "文理学部-桂园": "wenli",
+    "文理学部-枫园": "wenli",
+    "文理学部-樱园": "wenli",
+    "工学部":       "gongxue",
+    "信息学部":     "xinxi",
+    "医学部":       "yixue",
+    "街道口":       "zhoubian",
+    "广八路":       "zhoubian",
+}
+
+# Color palette for area groups (cycled)
+COLOR_PALETTE = ["#e53935", "#1e88e5", "#43a047", "#fb8c00", "#8e24aa",
+                 "#00897b", "#5e35b1", "#d81b60", "#3949ab", "#c0ca33"]
 
 # Regex for YAML-unsafe characters in unquoted scalar values
 YAML_UNSAFE = re.compile(r'[:{}\[\],&*?|>!%@`\'"#\n\r]')
@@ -105,6 +117,7 @@ def build_markdown(row: pd.Series, idx: int) -> str:
     review        = str(row.get("review", "")).strip()
     avg_price     = row.get("avg_price", 0)
     coord         = parse_coordinates(str(row.get("coordinates", "")))
+    image_url     = str(row.get("image_url", "")).strip()
 
     # Parse tags (comma-separated inside CSV quotes)
     tags_list = [t.strip() for t in tags_raw.split(",") if t.strip()]
@@ -137,9 +150,15 @@ coordinates:
 ---"""
 
     # ---- Body ----
+    cover = f"![封面]({image_url})\n" if image_url else ""
+
+    # Feedback link
+    encoded_name = name.replace(" ", "%20")
+    feedback_url = f"https://github.com/newuni316/whu-food-guide/issues/new?title=纠错：{encoded_name}&body=餐厅名称：{encoded_name}%0A问题描述："
+
     body = f"""
 
-# {name}
+{cover}# {name}
 
 {rating_stars(rating)} **{rating}** / 5.0 · 📍 {location}
 
@@ -160,9 +179,81 @@ coordinates:
 | 💰 人均消费 | ¥{avg_price_val:.0f} |
 | 📍 位置 | {location} |
 | 🏷️ 标签 | {', '.join(tags_list)} |
+
+---
+
+> 📝 [发现这家店信息有误？点击这里反馈]({feedback_url})
 """
 
     return front_matter + body
+
+
+# ---------------------------------------------------------------------------
+# Areas JSON generation
+# ---------------------------------------------------------------------------
+
+def _generate_areas_json(df: pd.DataFrame) -> list[dict]:
+    """Generate areas.json from CSV data by grouping locations."""
+    # Map location → area group key
+    location_to_key: dict[str, str] = {}
+    for _, row in df.iterrows():
+        loc = str(row.get("location", "")).strip()
+        area_key = AREA_KEY_MAP.get(loc)
+        if area_key and loc:
+            location_to_key[loc] = area_key
+
+    # Build groups: key → label, areas set
+    group_data: dict[str, set[str]] = {}
+    for loc, key in location_to_key.items():
+        # Extract short area name (e.g. "文理学部-梅园" → "梅园")
+        short = loc.split("-", 1)[1] if "-" in loc else loc
+        group_data.setdefault(key, set()).add(short)
+
+    # Fixed labels
+    labels = {
+        "wenli": "文理学部",
+        "gongxue": "工学部",
+        "xinxi": "信息学部",
+        "yixue": "医学部",
+        "zhoubian": "周边商圈",
+    }
+
+    result: list[dict] = []
+    for i, key in enumerate(["wenli", "gongxue", "xinxi", "yixue", "zhoubian"]):
+        if key in group_data:
+            result.append({
+                "key": key,
+                "label": labels.get(key, key),
+                "color": COLOR_PALETTE[i % len(COLOR_PALETTE)],
+                "areas": sorted(group_data[key]),
+            })
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Webhook handler
+# ---------------------------------------------------------------------------
+
+def handle_webhook() -> None:
+    """Read a single JSON record from stdin and append to CSV."""
+    data = json.load(sys.stdin)
+
+    if not CSV_PATH.exists():
+        print(f"[ERROR] CSV not found: {CSV_PATH}", file=sys.stderr)
+        sys.exit(1)
+
+    df = pd.read_csv(CSV_PATH, dtype=str, keep_default_na=False)
+
+    # Build a new row from JSON keys matching CSV columns
+    new_row: dict[str, str] = {}
+    for col in df.columns:
+        val = data.get(col, "")
+        new_row[col] = str(val) if val is not None else ""
+
+    # Append to CSV
+    new_df = pd.DataFrame([new_row])
+    new_df.to_csv(CSV_PATH, mode="a", header=False, index=False)
+    print(f"[OK] Appended record: {new_row.get('store_name', '(unknown)')}")
 
 
 # ---------------------------------------------------------------------------
@@ -216,7 +307,8 @@ def main() -> None:
         coord = parse_coordinates(str(row.get("coordinates", "")))
         if coord:
             tags_list = [t.strip() for t in str(row.get("tags", "")).split(",") if t.strip()]
-            markers.append({
+            image_url_val = str(row.get("image_url", "")).strip()
+            marker_entry: dict = {
                 "name":           name,
                 "location":       location,
                 "area":           str(row.get("area", "")).strip(),
@@ -226,7 +318,10 @@ def main() -> None:
                 "recommendation": str(row.get("recommendation", "")).strip(),
                 "lat":            coord["lat"],
                 "lng":            coord["lng"],
-            })
+            }
+            if image_url_val:
+                marker_entry["image_url"] = image_url_val
+            markers.append(marker_entry)
 
     # 5. Write markers.json
     ensure_dir(PUBLIC_DIR)
@@ -237,6 +332,15 @@ def main() -> None:
         encoding="utf-8",
     )
     generated.append(str(markers_path.relative_to(PROJECT_ROOT)))
+
+    # 6. Generate areas.json from CSV data
+    areas_json = _generate_areas_json(df)
+    areas_path = PUBLIC_DIR / "areas.json"
+    areas_path.write_text(
+        json.dumps(areas_json, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    generated.append(str(areas_path.relative_to(PROJECT_ROOT)))
 
     # 6. Report
     print()
@@ -253,4 +357,12 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="WHU Food Guide — Survey Data Processor")
+    parser.add_argument("--webhook", action="store_true",
+                        help="Read a single JSON record from stdin and append to CSV")
+    args = parser.parse_args()
+
+    if args.webhook:
+        handle_webhook()
+    else:
+        main()
