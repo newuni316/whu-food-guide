@@ -121,6 +121,8 @@ interface MarkerItem {
   recommendation?: string
   image_url?: string
   feedback_url?: string
+  admin_added?: boolean
+  student_verified?: boolean
 }
 
 // --- Area color configuration ---
@@ -209,6 +211,17 @@ function buildPopupContent(item: MarkerItem): string {
       </div>`
     : ''
 
+  let badgesHtml = ''
+  if (item.admin_added) {
+    badgesHtml += `<span style="display:inline-block;background:#8e24aa;color:#fff;padding:2px 8px;border-radius:12px;font-size:12px;margin-right:4px;">管理员推荐</span>`
+  }
+  if (item.student_verified) {
+    badgesHtml += `<span style="display:inline-block;background:#2e7d32;color:#fff;padding:2px 8px;border-radius:12px;font-size:12px;">学生认证</span>`
+  }
+  if (badgesHtml) {
+    badgesHtml = `<div style="margin-bottom:6px;">${badgesHtml}</div>`
+  }
+
   const imgHtml = item.image_url
     ? `<img src="${item.image_url}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:8px;" onerror="this.style.display='none'" />`
     : ''
@@ -224,6 +237,7 @@ function buildPopupContent(item: MarkerItem): string {
         padding-bottom:6px;
         border-bottom:2px solid ${color}30;
       ">${item.name}</div>
+      ${badgesHtml}
       <div style="margin-bottom:4px;">
         <span style="color:#f5a623;font-size:14px;letter-spacing:1px;">${stars}</span>
         <span style="font-size:13px;color:#333;font-weight:600;margin-left:4px;">${item.rating}</span>
@@ -324,9 +338,8 @@ onMounted(async () => {
   // Zoom control top-right
   L.control.zoom({ position: 'topright' }).addTo(map)
 
-  L.tileLayer('http://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
-    subdomains: ['1', '2', '3', '4'],
-    attribution: '&copy; 高德地图',
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     maxZoom: 19,
   }).addTo(map)
 

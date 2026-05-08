@@ -89,6 +89,12 @@ def rating_stars(rating: float) -> str:
     return "⭐" * full + ("✨" if half else "")
 
 
+def parse_bool(raw) -> bool:
+    """Parse various truthy values to boolean."""
+    s = str(raw).strip().lower()
+    return s in ("true", "1", "yes")
+
+
 def ensure_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
 
@@ -118,6 +124,8 @@ def build_markdown(row: pd.Series, idx: int) -> str:
     avg_price     = row.get("avg_price", 0)
     coord         = parse_coordinates(str(row.get("coordinates", "")))
     image_url     = str(row.get("image_url", "")).strip()
+    admin_added    = parse_bool(row.get("admin_added", ""))
+    student_verified = parse_bool(row.get("student_verified", ""))
 
     # Parse tags (comma-separated inside CSV quotes)
     tags_list = [t.strip() for t in tags_raw.split(",") if t.strip()]
@@ -152,6 +160,14 @@ coordinates:
     # ---- Body ----
     cover = f"![封面]({image_url})\n" if image_url else ""
 
+    # Badge HTML
+    badges = ""
+    if admin_added:
+        badges += '<span style="background:#8e24aa;color:#fff;padding:2px 8px;border-radius:12px;font-size:12px;">管理员推荐</span> '
+    if student_verified:
+        badges += '<span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:12px;font-size:12px;">学生认证</span> '
+    badges_line = f"\n{badges}\n" if badges else ""
+
     # Feedback link
     encoded_name = name.replace(" ", "%20")
     feedback_url = f"https://github.com/newuni316/whu-food-guide/issues/new?title=纠错：{encoded_name}&body=餐厅名称：{encoded_name}%0A问题描述："
@@ -160,6 +176,7 @@ coordinates:
 
 {cover}# {name}
 
+{badges_line}
 {rating_stars(rating)} **{rating}** / 5.0 · 📍 {location}
 
 ---
@@ -308,6 +325,8 @@ def main() -> None:
         if coord:
             tags_list = [t.strip() for t in str(row.get("tags", "")).split(",") if t.strip()]
             image_url_val = str(row.get("image_url", "")).strip()
+            admin_added_val = parse_bool(row.get("admin_added", ""))
+            student_verified_val = parse_bool(row.get("student_verified", ""))
             marker_entry: dict = {
                 "name":           name,
                 "location":       location,
@@ -321,6 +340,10 @@ def main() -> None:
             }
             if image_url_val:
                 marker_entry["image_url"] = image_url_val
+            if admin_added_val:
+                marker_entry["admin_added"] = True
+            if student_verified_val:
+                marker_entry["student_verified"] = True
             markers.append(marker_entry)
 
     # 5. Write markers.json
