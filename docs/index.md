@@ -32,11 +32,7 @@ features:
     title: 广八路
     details: 八一路+广埠屯合并，串串、热干面、烤鱼...深夜美食天堂
     link: /surroundings/guangbalu/
-  - icon: 🏡
-    title: 东湖新村
-    details: 东湖边的宝藏村落，烧烤牛肉面、深夜烟火气
-    link: /surroundings/donghuxincun/
   - icon: 🗺️
     title: 周边商圈总览
-    details: 广八路、东湖新村、银泰、群光、街道口...一站式浏览所有周边美食
+    details: 广八路、街道口等周边商圈美食，一站式浏览
     link: /surroundings/

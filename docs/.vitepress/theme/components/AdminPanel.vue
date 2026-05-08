@@ -13,6 +13,8 @@ interface MarkerItem {
   lng: number
   image_url?: string
   review?: string
+  admin_added?: boolean
+  student_verified?: boolean
 }
 
 const PASSWORD = 'whufood2024'
@@ -30,7 +32,8 @@ const editingIndex = ref<number | null>(null)
 const showAddForm = ref(false)
 const formData = ref<MarkerItem>({
   name: '', location: '', area: '', rating: 4, avg_price: 0,
-  tags: [], recommendation: '', lat: 30.538, lng: 114.367, image_url: '', review: ''
+  tags: [], recommendation: '', lat: 30.538, lng: 114.367, image_url: '', review: '',
+  admin_added: false, student_verified: false
 })
 const tagInput = ref('')
 
@@ -74,7 +77,7 @@ function login() {
 
 async function loadData() {
   try {
-    const res = await fetch('/markers.json')
+    const res = await fetch(import.meta.env.BASE_URL + 'markers.json')
     if (res.ok) markers.value = await res.json()
   } catch {}
   // Override with localStorage if exists
@@ -91,7 +94,8 @@ function saveToStorage() {
 function resetForm() {
   formData.value = {
     name: '', location: '', area: '', rating: 4, avg_price: 0,
-    tags: [], recommendation: '', lat: 30.538, lng: 114.367, image_url: '', review: ''
+    tags: [], recommendation: '', lat: 30.538, lng: 114.367, image_url: '', review: '',
+    admin_added: false, student_verified: false
   }
   tagInput.value = ''
 }
@@ -104,7 +108,7 @@ function startAdd() {
 
 function startEdit(index: number) {
   const m = filtered.value[index]
-  formData.value = { ...m, tags: [...m.tags], image_url: m.image_url || '', review: m.review || '' }
+  formData.value = { ...m, tags: [...m.tags], image_url: m.image_url || '', review: m.review || '', admin_added: m.admin_added || false, student_verified: m.student_verified || false }
   tagInput.value = m.tags.join(', ')
   editingIndex.value = index
   showAddForm.value = true
@@ -308,6 +312,18 @@ function ratingStars(r: number) {
             <label>图片 URL (可选)</label>
             <input v-model="formData.image_url" class="form-input" placeholder="https://..." />
           </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="formData.admin_added" />
+              管理员推荐
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="formData.student_verified" />
+              学生认证
+            </label>
+          </div>
         </div>
         <div class="form-actions">
           <button class="btn btn-primary" @click="saveForm">保存</button>
@@ -325,6 +341,7 @@ function ratingStars(r: number) {
               <th class="sortable" @click="toggleSort('rating')">评分 {{ sortIcon('rating') }}</th>
               <th class="sortable" @click="toggleSort('avg_price')">人均 {{ sortIcon('avg_price') }}</th>
               <th>标签</th>
+              <th>标识</th>
               <th>推荐菜品</th>
               <th>操作</th>
             </tr>
@@ -336,6 +353,10 @@ function ratingStars(r: number) {
                 <div class="location-text">{{ item.location }}</div>
               </td>
               <td><span class="area-badge">{{ item.area }}</span></td>
+              <td>
+                <span v-if="item.admin_added" class="badge badge-admin">管理</span>
+                <span v-if="item.student_verified" class="badge badge-student">认证</span>
+              </td>
               <td><span class="rating-stars">{{ ratingStars(item.rating) }}</span> {{ item.rating }}</td>
               <td>¥{{ item.avg_price }}</td>
               <td>
@@ -561,6 +582,18 @@ function ratingStars(r: number) {
   border-radius: 4px;
 }
 .btn-icon:hover { background: var(--vp-c-default-soft); }
+.checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+.checkbox-label input[type="checkbox"] { width: 16px; height: 16px; }
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 4px;
+}
+.badge-admin { background: #ede7f6; color: #7b1fa2; }
+.badge-student { background: #e8f5e9; color: #2e7d32; }
 
 @media (max-width: 768px) {
   .stats-grid { grid-template-columns: 1fr; }

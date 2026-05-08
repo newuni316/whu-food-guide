@@ -6,3 +6,4 @@ docs/.vitepress/cache/
 __pycache__/
 .pytest_cache/
 .venv/
+node_modules_old/
