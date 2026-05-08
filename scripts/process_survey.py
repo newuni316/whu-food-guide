@@ -33,8 +33,13 @@ LOCATION_MAP = {
     "信息学部":     "xinxixue",
     "医学部":       "yixue",
     "街道口":       "surroundings/jiedaokou",
-    "广埠屯":       "surroundings/guangbutun",
-    "八一路":       "surroundings/bayilu",
+    "广八路":       "surroundings/guangbalu",
+    "东湖新村":     "surroundings/donghuxincun",
+    "银泰":         "surroundings/yintai",
+    "群光":         "surroundings/qunguang",
+    "乐天城":       "surroundings/letiancheng",
+    "未来城":       "surroundings/weilaicheng",
+    "四眼井":       "surroundings/siyanjing",
 }
 
 # Regex for YAML-unsafe characters in unquoted scalar values

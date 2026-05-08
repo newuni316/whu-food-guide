@@ -28,11 +28,11 @@ features:
     title: 医学部
     details: 医学生的续命食堂，烤肉饭肉量感人
     link: /yixue/
-  - icon: 🛍️
-    title: 周边商圈
-    details: 街道口、广埠屯、八一路，校外觅食指南
-    link: /surroundings/
-  - icon: 🗺️
-    title: 地图总览
-    details: 交互式地图一键查看所有推荐餐厅
-    link: /map
+  - icon: 🍜
+    title: 广八路
+    details: 八一路+广埠屯合并，串串、热干面、烤鱼...深夜美食天堂
+    link: /surroundings/guangbalu/
+  - icon: 🏡
+    title: 东湖新村
+    details: 东湖边的宝藏村落，烧烤牛肉面、深夜烟火气
+    link: /surroundings/donghuxincun/
