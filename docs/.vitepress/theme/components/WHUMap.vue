@@ -102,6 +102,7 @@ const mapContainer = ref<HTMLDivElement | null>(null)
 let map: any = null
 let L: any = null
 let allMarkerObjs: { marker: any; item: MarkerItem }[] = []
+let resizeObserver: ResizeObserver | null = null
 
 const searchQuery = ref('')
 const selectedAreas = ref<string[]>([])
@@ -338,11 +339,29 @@ onMounted(async () => {
   // Zoom control top-right
   L.control.zoom({ position: 'topright' }).addTo(map)
 
-  L.tileLayer('https://wprd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+  const amapTileUrl = 'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}'
+  const osmTileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+
+  const amapLayer = L.tileLayer(amapTileUrl, {
     subdomains: ['1', '2', '3', '4'],
     attribution: '&copy; 高德地图',
     maxZoom: 19,
-  }).addTo(map)
+  })
+
+  let errorCount = 0
+  let osmAdded = false
+  amapLayer.on('tileerror', () => {
+    errorCount++
+    if (errorCount > 3 && map && !osmAdded) {
+      osmAdded = true
+      map.removeLayer(amapLayer)
+      L.tileLayer(osmTileUrl, {
+        attribution: '&copy; OpenStreetMap',
+        maxZoom: 19,
+      }).addTo(map)
+    }
+  })
+  amapLayer.addTo(map)
 
   // Load areaGroups dynamically from areas.json
   try {
@@ -384,9 +403,24 @@ onMounted(async () => {
   } catch (e) {
     console.error('Failed to load markers:', e)
   }
+
+  setTimeout(() => { if (map) map.invalidateSize() }, 100)
+  setTimeout(() => { if (map) map.invalidateSize() }, 500)
+  setTimeout(() => { if (map) map.invalidateSize() }, 1000)
+
+  if (mapContainer.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => {
+      if (map) map.invalidateSize()
+    })
+    resizeObserver.observe(mapContainer.value)
+  }
 })
 
 onUnmounted(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
   if (map) {
     map.remove()
     map = null

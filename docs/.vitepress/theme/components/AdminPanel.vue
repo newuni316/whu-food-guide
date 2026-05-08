@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 
 interface MarkerItem {
   name: string
@@ -36,6 +36,294 @@ const formData = ref<MarkerItem>({
   admin_added: false, student_verified: false
 })
 const tagInput = ref('')
+
+// ── Area Options (cascading) ──
+const areaOptions = [
+  {
+    key: 'wenli', label: '文理学部',
+    children: [
+      { key: '梅园', label: '梅园' },
+      { key: '桂园', label: '桂园' },
+      { key: '枫园', label: '枫园' },
+      { key: '樱园', label: '樱园' },
+    ]
+  },
+  {
+    key: 'gongxue', label: '工学部',
+    children: [{ key: '工学部', label: '工学部' }]
+  },
+  {
+    key: 'xinxi', label: '信息学部',
+    children: [{ key: '信息学部', label: '信息学部' }]
+  },
+  {
+    key: 'yixue', label: '医学部',
+    children: [{ key: '医学部', label: '医学部' }]
+  },
+  {
+    key: 'zhoubian', label: '周边商圈',
+    children: [
+      { key: '广八路', label: '广八路' },
+      { key: '街道口', label: '街道口' },
+      { key: '四眼井', label: '四眼井' },
+    ]
+  },
+]
+
+const selectedMajorArea = ref('')
+
+const currentChildren = computed(() => {
+  const group = areaOptions.find(g => g.key === selectedMajorArea.value)
+  return group ? group.children : []
+})
+
+watch(selectedMajorArea, () => {
+  const children = currentChildren.value
+  if (children.length > 0) {
+    formData.value.area = children[0].key
+    formData.value.location = `${areaOptions.find(g => g.key === selectedMajorArea.value)?.label}-${children[0].key}`
+  }
+})
+
+watch(() => formData.value.area, (newArea) => {
+  if (!newArea) return
+  const group = areaOptions.find(g => g.children.some(c => c.key === newArea))
+  if (group) {
+    selectedMajorArea.value = group.key
+    formData.value.location = `${group.label}-${newArea}`
+  }
+})
+
+// ── GitHub Sync ──
+const githubConfig = ref({ token: '', owner: 'newuni316', repo: 'whu-food-guide' })
+const showGithubConfig = ref(false)
+const syncing = ref(false)
+const toastMessage = ref('')
+const toastType = ref<'success' | 'error'>('success')
+const toastTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+
+function showToast(message: string, type: 'success' | 'error' = 'success') {
+  toastMessage.value = message
+  toastType.value = type
+  if (toastTimer.value) clearTimeout(toastTimer.value)
+  toastTimer.value = setTimeout(() => { toastMessage.value = '' }, 3000)
+}
+
+function loadGithubConfig() {
+  const saved = localStorage.getItem('whufood_github_config')
+  if (saved) {
+    try {
+      const cfg = JSON.parse(saved)
+      githubConfig.value = { ...githubConfig.value, ...cfg }
+    } catch {}
+  }
+}
+
+function saveGithubConfig() {
+  localStorage.setItem('whufood_github_config', JSON.stringify(githubConfig.value))
+  showGithubConfig.value = false
+  showToast('GitHub 配置已保存')
+}
+
+function markersToCSV(): string {
+  const header = 'store_name,location,area,rating,tags,recommendation,review,avg_price,coordinates'
+  const rows = markers.value.map(m => {
+    const coords = `${m.lat}/${m.lng}`
+    const tags = m.tags.join(',')
+    const review = (m.review || '').replace(/"/g, '""')
+    const rec = m.recommendation.replace(/"/g, '""')
+    return `"${m.name}","${m.location}","${m.area}",${m.rating},"${tags}","${rec}","${review}",${m.avg_price},"${coords}"`
+  })
+  return [header, ...rows].join('\n')
+}
+
+function csvToMarkers(csv: string): MarkerItem[] {
+  const lines = csv.trim().split('\n')
+  if (lines.length < 2) return []
+  const result: MarkerItem[] = []
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)
+    if (!cols || cols.length < 9) continue
+    const clean = (s: string) => s.replace(/^"|"$/g, '').replace(/""/g, '"')
+    const coords = clean(cols[8]).split('/')
+    result.push({
+      name: clean(cols[0]),
+      location: clean(cols[1]),
+      area: clean(cols[2]),
+      rating: parseFloat(cols[3]) || 0,
+      tags: clean(cols[4]).split(',').filter(Boolean),
+      recommendation: clean(cols[5]),
+      review: clean(cols[6]),
+      avg_price: parseInt(cols[7]) || 0,
+      lat: parseFloat(coords[0]) || 30.538,
+      lng: parseFloat(coords[1]) || 114.367,
+    })
+  }
+  return result
+}
+
+async function getFileSHA(): Promise<string | null> {
+  const { token, owner, repo } = githubConfig.value
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/data/mock_survey_data.csv`
+  const res = await fetch(url, {
+    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+  })
+  if (res.ok) {
+    const data = await res.json()
+    return data.sha
+  }
+  return null
+}
+
+async function syncToGithub() {
+  if (!githubConfig.value.token) {
+    showGithubConfig.value = true
+    showToast('请先配置 GitHub Token', 'error')
+    return
+  }
+  syncing.value = true
+  try {
+    const sha = await getFileSHA()
+    const csv = markersToCSV()
+    const body: Record<string, unknown> = {
+      message: `admin: 更新餐厅数据 - ${new Date().toISOString().slice(0, 10)}`,
+      content: btoa(unescape(encodeURIComponent(csv))),
+    }
+    if (sha) body.sha = sha
+    const { token, owner, repo } = githubConfig.value
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data/mock_survey_data.csv`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+    if (res.ok) {
+      showToast('同步到云端成功')
+    } else {
+      const err = await res.json()
+      showToast(`同步失败: ${err.message || res.statusText}`, 'error')
+    }
+  } catch (e: unknown) {
+    showToast(`网络错误: ${e instanceof Error ? e.message : '未知错误'}`, 'error')
+  } finally {
+    syncing.value = false
+  }
+}
+
+async function pullFromGithub() {
+  if (!githubConfig.value.token) {
+    showGithubConfig.value = true
+    showToast('请先配置 GitHub Token', 'error')
+    return
+  }
+  syncing.value = true
+  try {
+    const { token, owner, repo } = githubConfig.value
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data/mock_survey_data.csv`, {
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json()
+    const csv = decodeURIComponent(escape(atob(data.content)))
+    const parsed = csvToMarkers(csv)
+    if (parsed.length === 0) {
+      showToast('云端数据为空或解析失败', 'error')
+      return
+    }
+    markers.value = parsed
+    saveToStorage()
+    showToast(`从云端拉取 ${parsed.length} 条数据成功`)
+  } catch (e: unknown) {
+    showToast(`拉取失败: ${e instanceof Error ? e.message : '未知错误'}`, 'error')
+  } finally {
+    syncing.value = false
+  }
+}
+
+// ── Smart Text Parsing ──
+const parseText = ref('')
+
+function parseSharedText(text: string): Partial<MarkerItem> {
+  const result: Partial<MarkerItem> = {}
+
+  // 1. Extract store name: 【店名】or「店名」
+  const nameMatch = text.match(/[【「]([^】」]+)[】」]/)
+  if (nameMatch) result.name = nameMatch[1]
+
+  // 2. Extract address and try to match area
+  const addressMatch = text.match(/地址[：:]\s*(.+?)[\n,，。]/)
+  if (addressMatch) {
+    const addr = addressMatch[1]
+    for (const group of areaOptions) {
+      for (const child of group.children) {
+        if (addr.includes(child.key)) {
+          result.area = child.key
+          result.location = `${group.label}-${child.key}`
+          break
+        }
+      }
+    }
+    for (const group of areaOptions) {
+      if (addr.includes(group.label.replace('学部', ''))) {
+        if (!result.area && group.children.length > 0) {
+          result.area = group.children[0].key
+          result.location = `${group.label}-${group.children[0].key}`
+        }
+      }
+    }
+  }
+
+  // 3. Extract URL
+  const urlMatch = text.match(/https?:\/\/[^\s<>"]+/)
+  if (urlMatch) result.image_url = urlMatch[0]
+
+  // 4. Extract rating (e.g., "4.5分" or "评分：4.5")
+  const ratingMatch = text.match(/(\d\.?\d?)\s*[分评]/)
+  if (ratingMatch) {
+    const r = parseFloat(ratingMatch[1])
+    if (r >= 1 && r <= 5) result.rating = r
+  }
+
+  // 5. Extract price (e.g., "人均：¥25" or "人均25元")
+  const priceMatch = text.match(/人均[：:]?\s*[¥￥]?\s*(\d+)/)
+  if (priceMatch) result.avg_price = parseInt(priceMatch[1])
+
+  // 6. Extract tags from common keywords
+  const tagKeywords = ['火锅', '烧烤', '奶茶', '咖啡', '面馆', '快餐', '川菜', '湘菜', '粤菜', '日料', '韩料', '西餐', '甜品', '小吃']
+  const foundTags = tagKeywords.filter(k => text.includes(k))
+  if (foundTags.length > 0) result.tags = foundTags
+
+  return result
+}
+
+function doParseText() {
+  if (!parseText.value.trim()) {
+    showToast('请先粘贴文本', 'error')
+    return
+  }
+  const result = parseSharedText(parseText.value)
+  let filled = 0
+  if (result.name && !formData.value.name) { formData.value.name = result.name; filled++ }
+  if (result.area && !formData.value.area) { formData.value.area = result.area; filled++ }
+  if (result.location && !formData.value.location) { formData.value.location = result.location; filled++ }
+  if (result.rating && formData.value.rating === 4) { formData.value.rating = result.rating; filled++ }
+  if (result.avg_price && formData.value.avg_price === 0) { formData.value.avg_price = result.avg_price; filled++ }
+  if (result.image_url && !formData.value.image_url) { formData.value.image_url = result.image_url; filled++ }
+  if (result.tags && formData.value.tags.length === 0) {
+    formData.value.tags = result.tags
+    tagInput.value = result.tags.join(', ')
+    filled++
+  }
+  parseText.value = ''
+  if (filled > 0) {
+    showToast(`已智能填充 ${filled} 个字段`)
+  } else {
+    showToast('未能识别出新信息，或表单已有数据', 'error')
+  }
+}
 
 const areas = computed(() => {
   const set = new Set(markers.value.map(m => m.area))
@@ -85,6 +373,7 @@ async function loadData() {
   if (saved) {
     try { markers.value = JSON.parse(saved) } catch {}
   }
+  loadGithubConfig()
 }
 
 function saveToStorage() {
@@ -110,6 +399,9 @@ function startEdit(index: number) {
   const m = filtered.value[index]
   formData.value = { ...m, tags: [...m.tags], image_url: m.image_url || '', review: m.review || '', admin_added: m.admin_added || false, student_verified: m.student_verified || false }
   tagInput.value = m.tags.join(', ')
+  // Auto-detect major area for cascading select
+  const group = areaOptions.find(g => g.children.some(c => c.key === m.area))
+  selectedMajorArea.value = group ? group.key : ''
   editingIndex.value = index
   showAddForm.value = true
 }
@@ -196,6 +488,19 @@ function ratingStars(r: number) {
 
 <template>
   <div class="admin-panel">
+    <!-- Toast -->
+    <transition name="toast-fade">
+      <div v-if="toastMessage" class="toast" :class="`toast-${toastType}`">
+        {{ toastMessage }}
+      </div>
+    </transition>
+
+    <!-- Loading Overlay -->
+    <div v-if="syncing" class="sync-overlay">
+      <div class="sync-spinner"></div>
+      <span>同步中...</span>
+    </div>
+
     <!-- Login -->
     <div v-if="!authenticated" class="login-box">
       <div class="login-card">
@@ -248,6 +553,33 @@ function ratingStars(r: number) {
         </div>
       </div>
 
+      <!-- GitHub Config -->
+      <div class="section">
+        <div class="section-header" @click="showGithubConfig = !showGithubConfig">
+          <h3>GitHub 配置</h3>
+          <span class="toggle-icon">{{ showGithubConfig ? '▲' : '▼' }}</span>
+        </div>
+        <div v-if="showGithubConfig" class="github-config-card">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Token</label>
+              <input v-model="githubConfig.token" type="password" class="form-input" placeholder="ghp_xxxx" />
+            </div>
+            <div class="form-group">
+              <label>Owner</label>
+              <input v-model="githubConfig.owner" class="form-input" placeholder="newuni316" />
+            </div>
+            <div class="form-group">
+              <label>Repo</label>
+              <input v-model="githubConfig.repo" class="form-input" placeholder="whu-food-guide" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" @click="saveGithubConfig">保存配置</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Toolbar -->
       <div class="toolbar">
         <div class="toolbar-left">
@@ -259,6 +591,8 @@ function ratingStars(r: number) {
         </div>
         <div class="toolbar-right">
           <button class="btn btn-success" @click="startAdd">+ 新增</button>
+          <button class="btn btn-cloud" @click="syncToGithub" :disabled="syncing">☁️ 同步到云端</button>
+          <button class="btn btn-cloud" @click="pullFromGithub" :disabled="syncing">📥 从云端拉取</button>
           <button class="btn btn-outline" @click="exportCSV">导出 CSV</button>
           <button class="btn btn-outline" @click="exportJSON">导出 markers.json</button>
         </div>
@@ -267,18 +601,36 @@ function ratingStars(r: number) {
       <!-- Add/Edit Form -->
       <div v-if="showAddForm" class="form-card">
         <h3>{{ editingIndex !== null ? '编辑餐厅' : '新增餐厅' }}</h3>
+
+        <!-- Smart Text Parsing -->
+        <div class="parse-section">
+          <label class="parse-label">🔍 智能识别 - 粘贴美团/高德/点评分享文本</label>
+          <textarea v-model="parseText" class="form-input form-textarea parse-textarea" placeholder="粘贴分享文本，自动识别店名、地址、评分、人均等信息..."></textarea>
+          <button class="btn btn-parse" @click="doParseText">🔍 一键解析并填充</button>
+        </div>
+
         <div class="form-grid">
           <div class="form-group">
             <label>名称 *</label>
             <input v-model="formData.name" class="form-input" placeholder="餐厅名称" />
           </div>
           <div class="form-group">
-            <label>区域 *</label>
-            <input v-model="formData.area" class="form-input" placeholder="如：梅园、桂园" />
+            <label>大板块 *</label>
+            <select v-model="selectedMajorArea" class="form-input">
+              <option value="" disabled>请选择大板块</option>
+              <option v-for="g in areaOptions" :key="g.key" :value="g.key">{{ g.label }}</option>
+            </select>
           </div>
           <div class="form-group">
-            <label>位置</label>
-            <input v-model="formData.location" class="form-input" placeholder="如：文理学部-梅园" />
+            <label>具体位置 *</label>
+            <select v-model="formData.area" class="form-input">
+              <option value="" disabled>请选择位置</option>
+              <option v-for="c in currentChildren" :key="c.key" :value="c.key">{{ c.label }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>位置（自动生成）</label>
+            <input v-model="formData.location" class="form-input" placeholder="如：文理学部-梅园" readonly />
           </div>
           <div class="form-group">
             <label>评分 (1-5)</label>
@@ -353,16 +705,16 @@ function ratingStars(r: number) {
                 <div class="location-text">{{ item.location }}</div>
               </td>
               <td><span class="area-badge">{{ item.area }}</span></td>
-              <td>
-                <span v-if="item.admin_added" class="badge badge-admin">管理</span>
-                <span v-if="item.student_verified" class="badge badge-student">认证</span>
-              </td>
               <td><span class="rating-stars">{{ ratingStars(item.rating) }}</span> {{ item.rating }}</td>
               <td>¥{{ item.avg_price }}</td>
               <td>
                 <div class="tags-cell">
                   <span v-for="t in item.tags" :key="t" class="tag">{{ t }}</span>
                 </div>
+              </td>
+              <td>
+                <span v-if="item.admin_added" class="badge badge-admin">管理</span>
+                <span v-if="item.student_verified" class="badge badge-student">认证</span>
               </td>
               <td class="rec-cell">{{ item.recommendation }}</td>
               <td class="action-cell">
@@ -594,6 +946,99 @@ function ratingStars(r: number) {
 }
 .badge-admin { background: #ede7f6; color: #7b1fa2; }
 .badge-student { background: #e8f5e9; color: #2e7d32; }
+
+/* Toast */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.toast-success { background: #43a047; color: #fff; }
+.toast-error { background: #e53935; color: #fff; }
+.toast-fade-enter-active, .toast-fade-leave-active { transition: opacity 0.3s, transform 0.3s; }
+.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translateY(-10px); }
+
+/* Sync Overlay */
+.sync-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  z-index: 9998;
+  color: #fff;
+  font-size: 16px;
+}
+.sync-spinner {
+  width: 36px; height: 36px;
+  border: 4px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* GitHub Config */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+.section-header h3 { margin: 0; }
+.toggle-icon { font-size: 12px; color: var(--vp-c-text-2); }
+.github-config-card {
+  background: var(--vp-c-bg-soft);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 12px;
+}
+
+/* Cloud Button */
+.btn-cloud {
+  background: #e3f2fd;
+  color: #1565c0;
+  border-color: #90caf9;
+}
+.btn-cloud:hover { background: #bbdefb; }
+.btn-cloud:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Parse Section */
+.parse-section {
+  background: var(--vp-c-bg);
+  border: 1px dashed var(--vp-c-divider);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.parse-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vp-c-text-2);
+  margin-bottom: 8px;
+}
+.parse-textarea {
+  min-height: 80px;
+  margin-bottom: 8px;
+}
+.btn-parse {
+  background: #fff3e0;
+  color: #e65100;
+  border-color: #ffcc80;
+}
+.btn-parse:hover { background: #ffe0b2; }
 
 @media (max-width: 768px) {
   .stats-grid { grid-template-columns: 1fr; }
