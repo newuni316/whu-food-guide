@@ -1,0 +1,25 @@
+{
+  "name": "老干妈炒饭",
+  "slug": "laoganma-chaofan",
+  "campus": "wenli",
+  "area": "梅园",
+  "category": ["小吃", "快餐"],
+  "price_range": [8, 16],
+  "rating": {
+    "taste": 5,
+    "environment": 5,
+    "value": 5
+  },
+  "coordinates": {
+    "lat": 30.5388,
+    "lng": 114.3658
+  },
+  "address": "武汉大学文理学部梅园门口",
+  "hours": "10:00-22:00",
+  "recommendations": ["老干妈蛋炒饭", "虎皮青椒"],
+  "tags": ["性价比高", "量大实惠", "一人食"],
+  "review": "梅园门口的深夜灵魂，老干妈炒饭一绝，十块钱吃到撑。老板手脚麻利，高峰期也不用等太久。",
+  "source": "问卷",
+  "last_verified": "2026-05-09",
+  "contributor": "newuni316"
+}

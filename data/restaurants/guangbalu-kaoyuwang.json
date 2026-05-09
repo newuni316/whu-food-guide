@@ -1,0 +1,25 @@
+{
+  "name": "广八路烤鱼王",
+  "slug": "guangbalu-kaoyuwang",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": ["烤鱼"],
+  "price_range": [28, 52],
+  "rating": {
+    "taste": 4,
+    "environment": 4,
+    "value": 4
+  },
+  "coordinates": {
+    "lat": 30.5342,
+    "lng": 114.3665
+  },
+  "address": "武汉市洪山区广八路",
+  "hours": "11:00-01:00",
+  "recommendations": ["秘制烤鱼", "配菜拼盘"],
+  "tags": ["量大实惠", "适合聚餐", "深夜食堂"],
+  "review": "一条鱼三个人吃绰绰有余，味道麻辣鲜香。夏天来一扎啤酒绝配，营业到凌晨一点。",
+  "source": "问卷",
+  "last_verified": "2026-05-09",
+  "contributor": "newuni316"
+}

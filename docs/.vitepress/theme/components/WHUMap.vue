@@ -1,6 +1,20 @@
 <template>
   <ClientOnly>
     <div class="whu-map-wrapper">
+      <!-- Campus Filter Tabs -->
+      <div class="campus-tabs">
+        <button
+          v-for="tab in campusTabs"
+          :key="tab.key"
+          class="campus-tab"
+          :class="{ active: activeCampus === tab.key }"
+          :style="activeCampus === tab.key ? { background: tab.color, borderColor: tab.color } : {}"
+          @click="setCampusFilter(tab.key)"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
+
       <!-- Filter Panel -->
       <div class="filter-panel" :class="{ collapsed: panelCollapsed }">
         <button class="panel-toggle" @click="panelCollapsed = !panelCollapsed" :title="panelCollapsed ? '展开筛选' : '收起筛选'">
@@ -83,6 +97,12 @@
         </div>
       </div>
 
+      <!-- Geolocation Button -->
+      <button class="geo-btn" @click="locateUser" :title="locating ? '定位中...' : '我的位置'">
+        <span v-if="locating">⏳</span>
+        <span v-else>📍</span>
+      </button>
+
       <!-- Fit All Button -->
       <button class="fit-btn" @click="fitAllMarkers" title="查看所有标记">
         🎯 全部
@@ -101,14 +121,19 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 const mapContainer = ref<HTMLDivElement | null>(null)
 let map: any = null
 let L: any = null
+let markerClusterGroup: any = null
 let allMarkerObjs: { marker: any; item: MarkerItem }[] = []
 let resizeObserver: ResizeObserver | null = null
+let userLocationMarker: any = null
+let userLocationCircle: any = null
 
 const searchQuery = ref('')
 const selectedAreas = ref<string[]>([])
 const minRating = ref(0)
 const panelCollapsed = ref(false)
 const totalCount = ref(0)
+const activeCampus = ref('all')
+const locating = ref(false)
 
 interface MarkerItem {
   name: string
@@ -118,13 +143,32 @@ interface MarkerItem {
   tags: string[]
   location: string
   area: string
+  campus: string
   avg_price?: number
   recommendation?: string
   image_url?: string
   feedback_url?: string
   admin_added?: boolean
   student_verified?: boolean
+  address?: string
 }
+
+// --- Campus tabs ---
+interface CampusTab {
+  key: string
+  label: string
+  color: string
+  campus: string[]
+}
+
+const campusTabs: CampusTab[] = [
+  { key: 'all', label: '全部', color: '#1e88e5', campus: [] },
+  { key: 'wenli', label: '文理学部', color: '#e53935', campus: ['wenli'] },
+  { key: 'gongxue', label: '工学部', color: '#1e88e5', campus: ['gongxue'] },
+  { key: 'xinxixue', label: '信息学部', color: '#43a047', campus: ['xinxixue'] },
+  { key: 'yixue', label: '医学部', color: '#fb8c00', campus: ['yixue'] },
+  { key: 'zhoubian', label: '周边商圈', color: '#8e24aa', campus: ['surroundings'] },
+]
 
 // --- Area color configuration ---
 interface AreaGroup {
@@ -152,6 +196,13 @@ function getAreaColor(area: string): string {
 }
 
 function getAreaKey(area: string): string {
+  for (const group of areaGroups.value) {
+    if (group.areas.includes(area)) return group.key
+  }
+  return 'other'
+}
+
+function getCampusForArea(area: string): string {
   for (const group of areaGroups.value) {
     if (group.areas.includes(area)) return group.key
   }
@@ -227,6 +278,21 @@ function buildPopupContent(item: MarkerItem): string {
     ? `<img src="${item.image_url}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:8px;" onerror="this.style.display='none'" />`
     : ''
 
+  // Baidu Map navigation button
+  const navUrl = `https://api.map.baidu.com/marker?location=${item.lat},${item.lng}&title=${encodeURIComponent(item.name)}&content=${encodeURIComponent(item.address || item.location)}&output=html`
+  const navHtml = `<a href="${navUrl}" target="_blank" rel="noopener" style="
+    display:inline-block;
+    margin-top:8px;
+    padding:5px 14px;
+    background:${color};
+    color:#fff;
+    border-radius:6px;
+    font-size:12px;
+    text-decoration:none;
+    font-weight:500;
+    transition:opacity 0.2s;
+  " onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">🧭 百度导航</a>`
+
   return `
     <div style="min-width:200px;max-width:280px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
       ${imgHtml}
@@ -247,6 +313,7 @@ function buildPopupContent(item: MarkerItem): string {
       ${priceHtml}
       ${recHtml}
       <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:2px;">${tagsHtml}</div>
+      ${navHtml}
     </div>
   `
 }
@@ -255,10 +322,11 @@ function buildPopupContent(item: MarkerItem): string {
 const visibleCount = computed(() => {
   let count = 0
   for (const entry of allMarkerObjs) {
+    const matchesCampus = activeCampus.value === 'all' || matchCampus(entry.item)
     const matchesArea = selectedAreas.value.length === 0 || selectedAreas.value.includes(getAreaKey(entry.item.area))
     const matchesRating = entry.item.rating >= minRating.value
     const matchesSearch = !searchQuery.value || entry.item.name.includes(searchQuery.value)
-    if (matchesArea && matchesRating && matchesSearch) count++
+    if (matchesCampus && matchesArea && matchesRating && matchesSearch) count++
   }
   return count
 })
@@ -268,27 +336,37 @@ const searchResults = computed(() => {
   const q = searchQuery.value.toLowerCase()
   return allMarkerObjs
     .map(e => e.item)
-    .filter(item => item.name.toLowerCase().includes(q))
+    .filter(item => {
+      const matchesCampus = activeCampus.value === 'all' || matchCampus(item)
+      return matchesCampus && item.name.toLowerCase().includes(q)
+    })
     .slice(0, 8)
 })
 
+function matchCampus(item: MarkerItem): boolean {
+  const tab = campusTabs.find(t => t.key === activeCampus.value)
+  if (!tab || tab.campus.length === 0) return true
+  // Match by campus field if available, otherwise derive from area
+  const itemCampus = item.campus || getCampusForArea(item.area)
+  return tab.campus.includes(itemCampus)
+}
+
 // --- Filter application ---
 function applyFilters() {
+  if (!markerClusterGroup) return
+
+  markerClusterGroup.clearLayers()
+
   for (const entry of allMarkerObjs) {
+    const matchesCampus = activeCampus.value === 'all' || matchCampus(entry.item)
     const matchesArea = selectedAreas.value.length === 0 || selectedAreas.value.includes(getAreaKey(entry.item.area))
     const matchesRating = entry.item.rating >= minRating.value
     const matchesSearch = !searchQuery.value || entry.item.name.includes(searchQuery.value)
-    const visible = matchesArea && matchesRating && matchesSearch
+    const visible = matchesCampus && matchesArea && matchesRating && matchesSearch
 
     if (visible) {
-      if (!map.hasLayer(entry.marker)) {
-        entry.marker.addTo(map)
-      }
       entry.marker.setIcon(createDivIcon(entry.item.area, true))
-    } else {
-      if (map.hasLayer(entry.marker)) {
-        map.removeLayer(entry.marker)
-      }
+      markerClusterGroup.addLayer(entry.marker)
     }
   }
 }
@@ -297,6 +375,14 @@ function resetFilters() {
   selectedAreas.value = []
   minRating.value = 0
   searchQuery.value = ''
+  activeCampus.value = 'all'
+}
+
+function setCampusFilter(key: string) {
+  activeCampus.value = key
+  // Reset area checkboxes to show all within campus
+  selectedAreas.value = []
+  applyFilters()
 }
 
 function focusMarker(item: MarkerItem) {
@@ -305,6 +391,10 @@ function focusMarker(item: MarkerItem) {
   searchQuery.value = ''
   // Ensure visible
   selectedAreas.value = [getAreaKey(item.area)]
+  if (item.campus) {
+    const matchingTab = campusTabs.find(t => t.campus.includes(item.campus))
+    if (matchingTab) activeCampus.value = matchingTab.key
+  }
   minRating.value = 0
   applyFilters()
   // Fly to and open popup
@@ -320,10 +410,78 @@ function fitAllMarkers() {
   map.fitBounds(group.pad(0.2))
 }
 
+// --- Geolocation ---
+function locateUser() {
+  if (!map || !navigator.geolocation) return
+  locating.value = true
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      locating.value = false
+      const { latitude, longitude } = position.coords
+
+      // Remove previous user location markers
+      if (userLocationMarker) map.removeLayer(userLocationMarker)
+      if (userLocationCircle) map.removeLayer(userLocationCircle)
+
+      // Blue circle marker for user position
+      userLocationMarker = L.circleMarker([latitude, longitude], {
+        radius: 8,
+        fillColor: '#1e88e5',
+        fillOpacity: 1,
+        color: '#fff',
+        weight: 3,
+        opacity: 1,
+      }).addTo(map).bindPopup('📍 我的位置')
+
+      // Accuracy circle
+      userLocationCircle = L.circle([latitude, longitude], {
+        radius: position.coords.accuracy,
+        fillColor: '#1e88e5',
+        fillOpacity: 0.1,
+        color: '#1e88e5',
+        weight: 1,
+        opacity: 0.3,
+      }).addTo(map)
+
+      map.flyTo([latitude, longitude], 16, { duration: 0.8 })
+    },
+    (error) => {
+      locating.value = false
+      console.warn('Geolocation error:', error.message)
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  )
+}
+
 // Watch filters
 watch([selectedAreas, minRating, searchQuery], () => {
   if (map) applyFilters()
 })
+
+// --- Convert new format restaurant to MarkerItem ---
+function convertNewFormat(item: any): MarkerItem {
+  const avgRating = item.rating
+    ? Math.round(((item.rating.taste + item.rating.environment + item.rating.value) / 3) * 10) / 10
+    : 0
+  return {
+    name: item.name,
+    lat: item.coordinates?.lat ?? item.lat,
+    lng: item.coordinates?.lng ?? item.lng,
+    rating: avgRating,
+    tags: item.tags || [],
+    location: item.location || item.area || '',
+    area: item.area || '',
+    campus: item.campus || '',
+    avg_price: item.avg_price || (item.price_range ? Math.round((item.price_range[0] + item.price_range[1]) / 2) : undefined),
+    recommendation: item.recommendation || (item.recommendations ? item.recommendations.join('、') : ''),
+    image_url: item.image_url || (item.images && item.images.length > 0 ? item.images[0] : ''),
+    feedback_url: item.feedback_url,
+    admin_added: item.admin_added || false,
+    student_verified: item.student_verified || false,
+    address: item.address || '',
+  }
+}
 
 // --- Lifecycle ---
 onMounted(async () => {
@@ -331,6 +489,11 @@ onMounted(async () => {
 
   L = await import('leaflet')
   await import('leaflet/dist/leaflet.css')
+
+  // Import markercluster
+  const MarkerClusterGroup = (await import('leaflet.markercluster')).default
+  await import('leaflet.markercluster/dist/MarkerCluster.css')
+  await import('leaflet.markercluster/dist/MarkerCluster.Default.css')
 
   map = L.map(mapContainer.value, {
     zoomControl: false,
@@ -363,6 +526,39 @@ onMounted(async () => {
   })
   amapLayer.addTo(map)
 
+  // Initialize marker cluster group
+  markerClusterGroup = new MarkerClusterGroup({
+    maxClusterRadius: 50,
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false,
+    zoomToBoundsOnClick: true,
+    iconCreateFunction: (cluster: any) => {
+      const count = cluster.getChildCount()
+      let size = 'small'
+      if (count >= 50) size = 'large'
+      else if (count >= 10) size = 'medium'
+      return L.divIcon({
+        html: `<div style="
+          background:rgba(30,136,229,0.85);
+          color:#fff;
+          border-radius:50%;
+          width:${size === 'large' ? 48 : size === 'medium' ? 40 : 32}px;
+          height:${size === 'large' ? 48 : size === 'medium' ? 40 : 32}px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          font-weight:700;
+          font-size:${size === 'large' ? 15 : size === 'medium' ? 14 : 13}px;
+          box-shadow:0 2px 8px rgba(0,0,0,0.3);
+          border:2px solid rgba(255,255,255,0.8);
+        ">${count}</div>`,
+        className: 'custom-cluster-icon',
+        iconSize: L.point(size === 'large' ? 48 : size === 'medium' ? 40 : 32, size === 'large' ? 48 : size === 'medium' ? 40 : 32),
+      })
+    },
+  })
+  map.addLayer(markerClusterGroup)
+
   // Load areaGroups dynamically from areas.json
   try {
     const areasResp = await fetch(import.meta.env.BASE_URL + 'areas.json')
@@ -374,9 +570,28 @@ onMounted(async () => {
     // use default areaGroups
   }
 
+  // Load data: try new format first, fall back to markers.json
+  let markers: MarkerItem[] = []
   try {
-    const resp = await fetch(import.meta.env.BASE_URL + 'markers.json')
-    const markers: MarkerItem[] = await resp.json()
+    const resp = await fetch(import.meta.env.BASE_URL + 'restaurants.json')
+    const data = await resp.json()
+    if (Array.isArray(data) && data.length > 0 && data[0].coordinates) {
+      // New format
+      markers = data.map(convertNewFormat)
+    } else {
+      // Old format from restaurants.json
+      markers = data
+    }
+  } catch {
+    try {
+      const resp = await fetch(import.meta.env.BASE_URL + 'markers.json')
+      markers = await resp.json()
+    } catch (e) {
+      console.error('Failed to load any marker data:', e)
+    }
+  }
+
+  if (markers.length > 0) {
     totalCount.value = markers.length
 
     // Initialize all areas selected
@@ -386,12 +601,12 @@ onMounted(async () => {
     markers.forEach((item) => {
       const icon = createDivIcon(item.area, true)
       const marker = L.marker([item.lat, item.lng], { icon })
-        .addTo(map)
         .bindPopup(buildPopupContent(item), {
           maxWidth: 300,
           closeButton: true,
           className: 'whu-popup',
         })
+      markerClusterGroup.addLayer(marker)
       allMarkerObjs.push({ marker, item })
     })
 
@@ -400,8 +615,6 @@ onMounted(async () => {
       const group = L.latLngBounds(allMarkerObjs.map(e => [e.item.lat, e.item.lng]))
       map.fitBounds(group.pad(0.15))
     }
-  } catch (e) {
-    console.error('Failed to load markers:', e)
   }
 
   setTimeout(() => { if (map) map.invalidateSize() }, 100)
@@ -452,10 +665,41 @@ onUnmounted(() => {
   font-size: 16px;
 }
 
+/* ---- Campus Filter Tabs ---- */
+.campus-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 0;
+  flex-wrap: wrap;
+}
+
+.campus-tab {
+  padding: 6px 16px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.campus-tab:hover {
+  border-color: #aaa;
+  background: #f8f8f8;
+}
+
+.campus-tab.active {
+  color: #fff;
+  border-color: transparent;
+}
+
 /* ---- Filter Panel ---- */
 .filter-panel {
   position: absolute;
-  top: 12px;
+  top: 56px;
   left: 12px;
   z-index: 1000;
   background: rgba(255, 255, 255, 0.97);
@@ -463,7 +707,7 @@ onUnmounted(() => {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(8px);
   transition: all 0.3s ease;
-  max-height: calc(100% - 24px);
+  max-height: calc(100% - 68px);
   overflow-y: auto;
   width: 240px;
 }
@@ -711,6 +955,32 @@ onUnmounted(() => {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
+/* ---- Geolocation Button ---- */
+.geo-btn {
+  position: absolute;
+  top: 12px;
+  right: 108px;
+  z-index: 1000;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+  backdrop-filter: blur(6px);
+}
+.geo-btn:hover {
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+
 /* ---- Fit Button ---- */
 .fit-btn {
   position: absolute;
@@ -738,6 +1008,16 @@ onUnmounted(() => {
 @media (max-width: 768px) {
   .whu-map {
     height: 500px;
+  }
+
+  .campus-tabs {
+    gap: 4px;
+    padding: 8px 0;
+  }
+
+  .campus-tab {
+    padding: 5px 12px;
+    font-size: 12px;
   }
 
   .filter-panel {
@@ -783,9 +1063,14 @@ onUnmounted(() => {
     padding: 8px 10px;
   }
 
-  .fit-btn {
+  .geo-btn {
     top: 12px;
     right: 12px;
+  }
+
+  .fit-btn {
+    top: 12px;
+    right: 56px;
   }
 }
 
@@ -809,6 +1094,11 @@ onUnmounted(() => {
   background: none !important;
   border: none !important;
 }
+
+:deep(.custom-cluster-icon) {
+  background: none !important;
+  border: none !important;
+}
 </style>
 
 <style>
@@ -821,6 +1111,21 @@ html.dark .whu-map-wrapper .leaflet-control-zoom a {
   background: #2a2a2a;
   color: #e0e0e0;
   border-color: #444;
+}
+
+html.dark .campus-tab {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #ccc;
+}
+
+html.dark .campus-tab:hover {
+  background: #333;
+  border-color: #555;
+}
+
+html.dark .campus-tab.active {
+  color: #fff;
 }
 
 html.dark .filter-panel {
@@ -867,6 +1172,11 @@ html.dark .legend-title {
 
 html.dark .legend-item {
   color: #bbb;
+}
+
+html.dark .geo-btn {
+  background: rgba(30, 30, 30, 0.95);
+  color: #e0e0e0;
 }
 
 html.dark .fit-btn {

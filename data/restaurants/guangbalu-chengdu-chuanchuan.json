@@ -1,0 +1,25 @@
+{
+  "name": "广八路老成都串串",
+  "slug": "guangbalu-chengdu-chuanchuan",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": ["串串", "火锅"],
+  "price_range": [25, 46],
+  "rating": {
+    "taste": 5,
+    "environment": 5,
+    "value": 5
+  },
+  "coordinates": {
+    "lat": 30.5362,
+    "lng": 114.3690
+  },
+  "address": "武汉市洪山区广八路",
+  "hours": "11:00-02:00",
+  "recommendations": ["红油串串", "酥肉", "冰粉"],
+  "tags": ["适合聚餐", "深夜食堂", "外卖推荐"],
+  "review": "广八路的串串天花板！牛油锅底香得很，签子六毛一根很划算。半夜两点去还有人。",
+  "source": "问卷",
+  "last_verified": "2026-05-09",
+  "contributor": "newuni316"
+}

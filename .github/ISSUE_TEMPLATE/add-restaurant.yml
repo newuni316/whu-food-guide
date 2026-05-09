@@ -1,0 +1,86 @@
+name: 🍽️ 推荐新餐厅
+description: 推荐一家武汉大学周边的美食餐厅
+labels: ["new-restaurant"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: 餐厅名称
+      placeholder: 如：梅园小厨
+    validations:
+      required: true
+  - type: dropdown
+    id: campus
+    attributes:
+      label: 校区/区域
+      options:
+        - 文理学部-梅园
+        - 文理学部-桂园
+        - 文理学部-枫园
+        - 文理学部-樱园
+        - 工学部
+        - 信息学部
+        - 医学部
+        - 广八路
+        - 街道口
+    validations:
+      required: true
+  - type: input
+    id: address
+    attributes:
+      label: 详细地址
+      placeholder: 如：梅园食堂门口右侧
+    validations:
+      required: true
+  - type: input
+    id: price
+    attributes:
+      label: 人均消费（元）
+      placeholder: "15"
+    validations:
+      required: true
+  - type: input
+    id: rating
+    attributes:
+      label: 推荐评分（1-5）
+      placeholder: "4.5"
+    validations:
+      required: true
+  - type: textarea
+    id: recommendations
+    attributes:
+      label: 推荐菜品
+      placeholder: 每行一道菜，如：
+        老干妈蛋炒饭
+        虎皮青椒
+    validations:
+      required: true
+  - type: textarea
+    id: tags
+    attributes:
+      label: 标签
+      description: "选择合适的标签，用逗号分隔"
+      placeholder: "性价比高, 适合聚餐, 深夜食堂, 环境好, 出餐快, 量大实惠, 一人食, 外卖推荐, 早餐, 咖啡"
+    validations:
+      required: true
+  - type: textarea
+    id: review
+    attributes:
+      label: 详细评价
+      placeholder: 分享你的用餐体验...
+    validations:
+      required: false
+  - type: input
+    id: hours
+    attributes:
+      label: 营业时间
+      placeholder: "10:00-22:00"
+    validations:
+      required: false
+  - type: input
+    id: phone
+    attributes:
+      label: 联系电话
+      placeholder: "可选"
+    validations:
+      required: false

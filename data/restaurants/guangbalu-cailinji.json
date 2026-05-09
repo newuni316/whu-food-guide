@@ -1,0 +1,25 @@
+{
+  "name": "广八路蔡林记",
+  "slug": "guangbalu-cailinji",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": ["粉面", "小吃"],
+  "price_range": [11, 20],
+  "rating": {
+    "taste": 4,
+    "environment": 4,
+    "value": 4
+  },
+  "coordinates": {
+    "lat": 30.5360,
+    "lng": 114.3692
+  },
+  "address": "武汉市洪山区广八路",
+  "hours": "06:30-21:00",
+  "recommendations": ["热干面", "三鲜豆皮", "蛋酒"],
+  "tags": ["性价比高", "出餐快", "一人食"],
+  "review": "来武汉必吃的热干面，芝麻酱浓稠挂面。三鲜豆皮外脆里嫩，游客和学生都有。",
+  "source": "问卷",
+  "last_verified": "2026-05-09",
+  "contributor": "newuni316"
+}

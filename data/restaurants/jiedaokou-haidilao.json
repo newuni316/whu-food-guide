@@ -1,0 +1,25 @@
+{
+  "name": "街道口海底捞",
+  "slug": "jiedaokou-haidilao",
+  "campus": "surroundings",
+  "area": "街道口",
+  "category": ["火锅"],
+  "price_range": [60, 111],
+  "rating": {
+    "taste": 3,
+    "environment": 3,
+    "value": 3
+  },
+  "coordinates": {
+    "lat": 30.5358,
+    "lng": 114.3678
+  },
+  "address": "武汉市洪山区街道口商圈",
+  "hours": "09:00-次日07:00",
+  "recommendations": ["番茄锅底", "捞派毛肚", "虾滑"],
+  "tags": ["环境好", "适合聚餐"],
+  "review": "服务确实没话说，但对学生来说价格偏高。番茄锅底是招牌，等位可以做美甲。人均不便宜。",
+  "source": "问卷",
+  "last_verified": "2026-05-09",
+  "contributor": "newuni316"
+}

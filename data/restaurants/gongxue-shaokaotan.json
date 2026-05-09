@@ -1,0 +1,25 @@
+{
+  "name": "工学部烧烤摊",
+  "slug": "gongxue-shaokaotan",
+  "campus": "gongxue",
+  "area": "工学部",
+  "category": ["烧烤"],
+  "price_range": [21, 39],
+  "rating": {
+    "taste": 5,
+    "environment": 5,
+    "value": 5
+  },
+  "coordinates": {
+    "lat": 30.5420,
+    "lng": 114.3645
+  },
+  "address": "武汉大学工学部附近",
+  "hours": "17:00-02:00",
+  "recommendations": ["烤串", "烤茄子", "烤韭菜"],
+  "tags": ["深夜食堂", "适合聚餐", "量大实惠"],
+  "review": "工学部深夜的快乐源泉，老板烤功一绝。烤茄子蒜蓉给得足，配啤酒聊天到半夜。",
+  "source": "问卷",
+  "last_verified": "2026-05-09",
+  "contributor": "newuni316"
+}

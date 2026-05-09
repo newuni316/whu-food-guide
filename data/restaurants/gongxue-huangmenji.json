@@ -1,0 +1,25 @@
+{
+  "name": "工学部黄焖鸡",
+  "slug": "gongxue-huangmenji",
+  "campus": "gongxue",
+  "area": "工学部",
+  "category": ["快餐"],
+  "price_range": [11, 21],
+  "rating": {
+    "taste": 4,
+    "environment": 4,
+    "value": 4
+  },
+  "coordinates": {
+    "lat": 30.5415,
+    "lng": 114.3640
+  },
+  "address": "武汉大学工学部食堂附近",
+  "hours": "10:00-20:00",
+  "recommendations": ["黄焖鸡米饭", "配菜加豆皮"],
+  "tags": ["性价比高", "出餐快", "外卖推荐"],
+  "review": "工学部同学的外卖首选，黄焖鸡入味下饭。加两块钱多一份豆皮，性价比拉满。",
+  "source": "问卷",
+  "last_verified": "2026-05-09",
+  "contributor": "newuni316"
+}

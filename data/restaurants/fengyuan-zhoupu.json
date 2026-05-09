@@ -1,0 +1,25 @@
+{
+  "name": "枫园粥铺",
+  "slug": "fengyuan-zhoupu",
+  "campus": "wenli",
+  "area": "枫园",
+  "category": ["早餐", "粥"],
+  "price_range": [6, 10],
+  "rating": {
+    "taste": 4,
+    "environment": 4,
+    "value": 4
+  },
+  "coordinates": {
+    "lat": 30.5380,
+    "lng": 114.3655
+  },
+  "address": "武汉大学文理学部枫园",
+  "hours": "06:30-14:00",
+  "recommendations": ["皮蛋瘦肉粥", "油条", "小笼包"],
+  "tags": ["早餐", "性价比高", "一人食"],
+  "review": "枫园最温暖的早餐去处，皮蛋粥熬得很稠，冬天来一碗幸福感爆棚。早上六点半就开门了。",
+  "source": "问卷",
+  "last_verified": "2026-05-09",
+  "contributor": "newuni316"
+}

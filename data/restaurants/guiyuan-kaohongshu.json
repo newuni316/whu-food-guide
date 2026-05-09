@@ -1,0 +1,25 @@
+{
+  "name": "桂园烤红薯",
+  "slug": "guiyuan-kaohongshu",
+  "campus": "wenli",
+  "area": "桂园",
+  "category": ["甜品饮品", "小吃"],
+  "price_range": [6, 10],
+  "rating": {
+    "taste": 4,
+    "environment": 4,
+    "value": 4
+  },
+  "coordinates": {
+    "lat": 30.5405,
+    "lng": 114.3672
+  },
+  "address": "武汉大学文理学部桂园",
+  "hours": "14:00-22:00",
+  "recommendations": ["烤红薯", "烤玉米"],
+  "tags": ["性价比高", "甜品饮品", "一人食"],
+  "review": "冬天的桂园标配，红薯烤得流蜜，甜到心里。一个大红薯六七块钱，暖手又暖胃。",
+  "source": "问卷",
+  "last_verified": "2026-05-09",
+  "contributor": "newuni316"
+}

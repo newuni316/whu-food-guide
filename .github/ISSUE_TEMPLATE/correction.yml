@@ -1,0 +1,37 @@
+name: 💡 纠错反馈
+description: 报告餐厅信息有误或需要更新
+labels: ["correction"]
+body:
+  - type: input
+    id: restaurant
+    attributes:
+      label: 餐厅名称
+      placeholder: 如：梅园小厨
+    validations:
+      required: true
+  - type: dropdown
+    id: issue_type
+    attributes:
+      label: 问题类型
+      options:
+        - 信息有误（地址、电话、营业时间等）
+        - 餐厅已关闭
+        - 评分需要更新
+        - 推荐菜品需要更新
+        - 其他
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: 详细说明
+      placeholder: 请描述需要更正的内容...
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 补充证据（可选）
+      placeholder: 如：截图、照片链接、最新消费小票等
+    validations:
+      required: false

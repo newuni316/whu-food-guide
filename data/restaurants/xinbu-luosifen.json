@@ -1,0 +1,25 @@
+{
+  "name": "信部螺蛳粉",
+  "slug": "xinbu-luosifen",
+  "campus": "xinxixue",
+  "area": "信息学部",
+  "category": ["粉面"],
+  "price_range": [13, 23],
+  "rating": {
+    "taste": 5,
+    "environment": 5,
+    "value": 5
+  },
+  "coordinates": {
+    "lat": 30.5372,
+    "lng": 114.3718
+  },
+  "address": "武汉大学信息学部附近",
+  "hours": "10:00-02:00",
+  "recommendations": ["螺蛳粉", "卤蛋", "炸腐竹"],
+  "tags": ["性价比高", "深夜食堂", "外卖推荐"],
+  "review": "信部夜宵的王！正宗柳州味道，酸笋够臭够味。加个卤蛋和炸腐竹，快乐翻倍。宿舍不让带回去吃。",
+  "source": "问卷",
+  "last_verified": "2026-05-09",
+  "contributor": "newuni316"
+}

@@ -1,0 +1,25 @@
+{
+  "name": "梅园鸡蛋灌饼",
+  "slug": "meiyuan-danjiguanbing",
+  "campus": "wenli",
+  "area": "梅园",
+  "category": ["早餐", "小吃"],
+  "price_range": [4, 7],
+  "rating": {
+    "taste": 5,
+    "environment": 5,
+    "value": 5
+  },
+  "coordinates": {
+    "lat": 30.5390,
+    "lng": 114.3660
+  },
+  "address": "武汉大学文理学部梅园路口",
+  "hours": "06:00-12:00",
+  "recommendations": ["鸡蛋灌饼", "豆浆"],
+  "tags": ["性价比高", "早餐", "出餐快"],
+  "review": "梅园路口的早餐之神！饼皮酥脆鸡蛋嫩滑，加一根烤肠三块五搞定早餐。每天早上都排长队。",
+  "source": "问卷",
+  "last_verified": "2026-05-09",
+  "contributor": "newuni316"
+}

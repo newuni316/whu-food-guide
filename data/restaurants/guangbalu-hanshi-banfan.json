@@ -1,0 +1,25 @@
+{
+  "name": "广八路韩式拌饭",
+  "slug": "guangbalu-hanshi-banfan",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": ["韩式料理"],
+  "price_range": [20, 36],
+  "rating": {
+    "taste": 4,
+    "environment": 4,
+    "value": 4
+  },
+  "coordinates": {
+    "lat": 30.5345,
+    "lng": 114.3668
+  },
+  "address": "武汉市洪山区广八路",
+  "hours": "10:00-21:00",
+  "recommendations": ["石锅拌饭", "泡菜汤", "炸鸡"],
+  "tags": ["环境好", "一人食", "外卖推荐"],
+  "review": "环境很韩系，适合拍照打卡。石锅拌饭锅巴很脆，拌匀了吃每一口都有料。",
+  "source": "问卷",
+  "last_verified": "2026-05-09",
+  "contributor": "newuni316"
+}

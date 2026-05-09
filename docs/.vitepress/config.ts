@@ -38,6 +38,7 @@ export default defineConfig({
           { text: '⚠️ 避雷专区', link: '/rankings/avoid' }
         ]
       },
+      { text: '餐厅列表', link: '/restaurants/' },
       { text: '地图总览', link: '/map' },
       { text: '关于', link: '/about' }
     ],
@@ -91,6 +92,14 @@ export default defineConfig({
             { text: '🏆 口碑 Top 10', link: '/rankings/top10' },
             { text: '💕 约会必去榜', link: '/rankings/date-night' },
             { text: '⚠️ 避雷专区', link: '/rankings/avoid' }
+          ]
+        }
+      ],
+      '/restaurants/': [
+        {
+          text: '餐厅',
+          items: [
+            { text: '全部餐厅', link: '/restaurants/' }
           ]
         }
       ]

@@ -11,6 +11,9 @@ hero:
     - theme: alt
       text: 地图总览
       link: /map
+    - theme: alt
+      text: 📝 推荐餐厅
+      link: https://github.com/newuni316/whu-food-guide/issues/new?template=add-restaurant.yml
 features:
   - icon: 🌸
     title: 文理学部

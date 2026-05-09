@@ -7,3 +7,7 @@
 ::: tip
 以下餐厅按评分排序，点击查看详情。
 :::
+
+- [老干妈炒饭](./laoganma-chaofan.md) — ⭐5 · ¥12 · 老干妈蛋炒饭、虎皮青椒
+- [梅园鸡蛋灌饼](./meiyuan-danjiguanbing.md) — ⭐5 · ¥6 · 鸡蛋灌饼、豆浆
+- [梅园小厨](./meiyuan-xiaochu.md) — ⭐4 · ¥28 · 酸菜鱼、干锅花菜

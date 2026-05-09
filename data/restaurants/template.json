@@ -1,0 +1,27 @@
+{
+  "name": "投稿模板",
+  "slug": "template",
+  "campus": "wenli",
+  "area": "梅园",
+  "category": ["小吃"],
+  "price_range": [10, 20],
+  "rating": {
+    "taste": 4,
+    "environment": 4,
+    "value": 4
+  },
+  "coordinates": {
+    "lat": 30.5388,
+    "lng": 114.3658
+  },
+  "address": "请填写详细地址",
+  "hours": "09:00-21:00",
+  "phone": "",
+  "images": [],
+  "recommendations": ["推荐菜1", "推荐菜2"],
+  "tags": ["性价比高"],
+  "review": "请填写你的用餐体验。",
+  "source": "投稿",
+  "last_verified": "2026-05-09",
+  "contributor": ""
+}

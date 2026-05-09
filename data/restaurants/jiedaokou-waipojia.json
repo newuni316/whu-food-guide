@@ -1,0 +1,25 @@
+{
+  "name": "街道口外婆家",
+  "slug": "jiedaokou-waipojia",
+  "campus": "surroundings",
+  "area": "街道口",
+  "category": ["正餐"],
+  "price_range": [32, 59],
+  "rating": {
+    "taste": 4,
+    "environment": 4,
+    "value": 4
+  },
+  "coordinates": {
+    "lat": 30.5355,
+    "lng": 114.3675
+  },
+  "address": "武汉市洪山区街道口商圈",
+  "hours": "10:30-21:00",
+  "recommendations": ["外婆红烧肉", "绿茶饼", "西湖醋鱼"],
+  "tags": ["环境好", "适合聚餐"],
+  "review": "连锁品牌出品稳定，环境好适合约会。就是高峰期排队长，建议提前取号。",
+  "source": "问卷",
+  "last_verified": "2026-05-09",
+  "contributor": "newuni316"
+}

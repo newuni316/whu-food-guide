@@ -1,0 +1,25 @@
+{
+  "name": "桂园食堂二楼",
+  "slug": "guiyuan-shitang",
+  "campus": "wenli",
+  "area": "桂园",
+  "category": ["快餐", "正餐"],
+  "price_range": [7, 13],
+  "rating": {
+    "taste": 4,
+    "environment": 4,
+    "value": 4
+  },
+  "coordinates": {
+    "lat": 30.5401,
+    "lng": 114.3670
+  },
+  "address": "武汉大学文理学部桂园食堂二楼",
+  "hours": "06:30-20:00",
+  "recommendations": ["红烧肉盖饭", "番茄蛋汤"],
+  "tags": ["性价比高", "量大实惠", "出餐快"],
+  "review": "食堂二楼的红烧肉是桂园之光，肥瘦相间入口即化。中午去晚了就没位置，建议11:30前到。",
+  "source": "问卷",
+  "last_verified": "2026-05-09",
+  "contributor": "newuni316"
+}

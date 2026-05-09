@@ -7,3 +7,8 @@
 ::: tip
 以下餐厅按评分排序，点击查看详情。
 :::
+
+- [广八路老成都串串](./guangbalu-chengdu-chuanchuan.md) — ⭐5 · ¥36 · 红油串串、酥肉
+- [广八路蔡林记](./guangbalu-cailinji.md) — ⭐4 · ¥16 · 热干面、三鲜豆皮
+- [广八路韩式拌饭](./guangbalu-hanshi-banfan.md) — ⭐4 · ¥28 · 石锅拌饭、泡菜汤
+- [广八路烤鱼王](./guangbalu-kaoyuwang.md) — ⭐4 · ¥40 · 秘制烤鱼、配菜拼盘

@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Restaurant",
+  "type": "object",
+  "required": ["name", "slug", "campus", "area", "category", "price_range", "rating", "coordinates", "address", "hours", "recommendations", "tags", "source", "last_verified"],
+  "properties": {
+    "name": { "type": "string", "description": "餐厅名称" },
+    "slug": { "type": "string", "pattern": "^[a-z0-9-]+$", "description": "URL友好ID" },
+    "campus": { "type": "string", "enum": ["wenli", "gongxue", "xinxixue", "yixue", "surroundings"] },
+    "area": { "type": "string", "enum": ["梅园", "桂园", "枫园", "樱园", "工学部", "信息学部", "医学部", "广八路", "街道口"] },
+    "category": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "price_range": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 },
+    "rating": {
+      "type": "object",
+      "properties": {
+        "taste": { "type": "number", "minimum": 1, "maximum": 5 },
+        "environment": { "type": "number", "minimum": 1, "maximum": 5 },
+        "value": { "type": "number", "minimum": 1, "maximum": 5 }
+      },
+      "required": ["taste", "environment", "value"]
+    },
+    "coordinates": {
+      "type": "object",
+      "properties": {
+        "lat": { "type": "number" },
+        "lng": { "type": "number" }
+      },
+      "required": ["lat", "lng"]
+    },
+    "address": { "type": "string" },
+    "hours": { "type": "string" },
+    "phone": { "type": "string" },
+    "images": { "type": "array", "items": { "type": "string" } },
+    "recommendations": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "source": { "type": "string", "enum": ["问卷", "投稿"] },
+    "last_verified": { "type": "string", "format": "date" },
+    "contributor": { "type": "string" }
+  }
+}

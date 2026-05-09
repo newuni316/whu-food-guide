@@ -1,0 +1,25 @@
+{
+  "name": "信息学部一食堂",
+  "slug": "xinxixue-yishitang",
+  "campus": "xinxixue",
+  "area": "信息学部",
+  "category": ["快餐"],
+  "price_range": [11, 20],
+  "rating": {
+    "taste": 4,
+    "environment": 4,
+    "value": 4
+  },
+  "coordinates": {
+    "lat": 30.5370,
+    "lng": 114.3720
+  },
+  "address": "武汉大学信息学部一食堂",
+  "hours": "06:30-20:00",
+  "recommendations": ["麻辣香锅", "武汉热干面"],
+  "tags": ["性价比高", "出餐快", "量大实惠"],
+  "review": "信部食堂yyds，麻辣香锅可以自选菜品，味道不输外面的店。就是座位太少了。",
+  "source": "问卷",
+  "last_verified": "2026-05-09",
+  "contributor": "newuni316"
+}

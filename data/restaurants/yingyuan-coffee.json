@@ -1,0 +1,25 @@
+{
+  "name": "樱园咖啡",
+  "slug": "yingyuan-coffee",
+  "campus": "wenli",
+  "area": "樱园",
+  "category": ["咖啡", "甜品饮品"],
+  "price_range": [18, 33],
+  "rating": {
+    "taste": 5,
+    "environment": 5,
+    "value": 5
+  },
+  "coordinates": {
+    "lat": 30.5392,
+    "lng": 114.3650
+  },
+  "address": "武汉大学文理学部樱园",
+  "hours": "08:00-22:00",
+  "recommendations": ["手冲拿铁", "芝士蛋糕"],
+  "tags": ["咖啡", "环境好", "一人食"],
+  "review": "樱园最美咖啡馆，靠窗位置可以看到樱花大道。咖啡品质在线，适合一个人看书发呆。",
+  "source": "问卷",
+  "last_verified": "2026-05-09",
+  "contributor": "newuni316"
+}
