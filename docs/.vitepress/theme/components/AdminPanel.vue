@@ -2,9 +2,6 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import type { Restaurant } from '../types'
 
-// Lightweight auth for a personal project — not production-grade security.
-// Compares SHA-256 hash of user input against a stored hash.
-// Override at build time via window.__ADMIN_PASSWORD_HASH__ if needed.
 const DEFAULT_PASSWORD_HASH = '9995ed7c16d433353a2d257542ba2104f976c68cbfd97d8c8539de24174cdb4b'
 
 function sha256Fallback(input: string): string {
@@ -53,14 +50,16 @@ function sha256Fallback(input: string): string {
 }
 
 async function sha256(input: string): Promise<string> {
-  if (typeof crypto !== 'undefined' && crypto.subtle) {
-    const encoder = new TextEncoder()
-    const data = encoder.encode(input)
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-    return Array.from(new Uint8Array(hashBuffer))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('')
-  }
+  try {
+    if (typeof crypto !== 'undefined' && crypto.subtle) {
+      const encoder = new TextEncoder()
+      const data = encoder.encode(input)
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+      return Array.from(new Uint8Array(hashBuffer))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('')
+    }
+  } catch {}
   return sha256Fallback(input)
 }
 
@@ -435,19 +434,21 @@ const stats = computed(() => {
 const maxAreaCount = computed(() => Math.max(1, ...Object.values(stats.value.areaDist)))
 
 async function login() {
+  let hash: string
   try {
-    const hash = await sha256(passwordInput.value)
-    const expectedHash = (window as Record<string, unknown>).__ADMIN_PASSWORD_HASH__ as string || DEFAULT_PASSWORD_HASH
-    if (hash === expectedHash) {
-      authenticated.value = true
-      passwordError.value = false
-      loadData()
-    } else {
-      passwordError.value = true
-    }
+    hash = await sha256(passwordInput.value)
   } catch {
-    showToast('安全上下文不可用，请使用 localhost 或 HTTPS 访问', 'error')
+    showToast('加密模块不可用，请使用 localhost 或 HTTPS 访问', 'error')
+    return
   }
+  const expectedHash = (window as Record<string, unknown>).__ADMIN_PASSWORD_HASH__ as string || DEFAULT_PASSWORD_HASH
+  if (hash !== expectedHash) {
+    passwordError.value = true
+    return
+  }
+  authenticated.value = true
+  passwordError.value = false
+  await loadData()
 }
 
 function normalizeLegacyData(data: Record<string, unknown>[]): Restaurant[] {

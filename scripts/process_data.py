@@ -3,7 +3,7 @@
 WHU Food Guide — Structured Data Processor
 Reads data/restaurants/*.json, validates against data/schema.json, and generates:
   1. docs/public/markers.json — map markers
-  2. docs/.vitepress/theme/data/restaurants.json — frontend filter data
+  2. docs/public/restaurants.json — frontend filter data
   3. Per-restaurant Markdown pages under docs/
   4. Updated area index.md files with restaurant listings
 """
@@ -31,7 +31,6 @@ RESTAURANTS_DIR = DATA_DIR / "restaurants"
 SCHEMA_PATH = DATA_DIR / "schema.json"
 DOCS_DIR = PROJECT_ROOT / "docs"
 PUBLIC_DIR = DOCS_DIR / "public"
-THEME_DATA_DIR = DOCS_DIR / ".vitepress" / "theme" / "data"
 
 # campus/area → relative doc directory under docs/
 AREA_DOC_MAP = {
@@ -408,9 +407,9 @@ def main(validate_only: bool = False) -> None:
         generated.append(str(md_path.relative_to(PROJECT_ROOT)))
 
     # 4c. Frontend filter data
-    ensure_dir(THEME_DATA_DIR)
+    ensure_dir(PUBLIC_DIR)
     restaurants_json = generate_restaurants_json(restaurants)
-    rj_path = THEME_DATA_DIR / "restaurants.json"
+    rj_path = PUBLIC_DIR / "restaurants.json"
     rj_path.write_text(
         json.dumps(restaurants_json, ensure_ascii=False, indent=2), encoding="utf-8"
     )

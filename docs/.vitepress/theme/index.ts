@@ -5,6 +5,7 @@ import AdminPanel from './components/AdminPanel.vue'
 import RankingList from './components/RankingList.vue'
 import FilterBar from './components/FilterBar.vue'
 import RestaurantCard from './components/RestaurantCard.vue'
+import RestaurantList from './components/RestaurantList.vue'
 import MapFilterPanel from './components/MapFilterPanel.vue'
 import MapSearchDropdown from './components/MapSearchDropdown.vue'
 import MapLegend from './components/MapLegend.vue'
@@ -18,6 +19,7 @@ export default {
     app.component('RankingList', RankingList)
     app.component('FilterBar', FilterBar)
     app.component('RestaurantCard', RestaurantCard)
+    app.component('RestaurantList', RestaurantList)
     app.component('MapFilterPanel', MapFilterPanel)
     app.component('MapSearchDropdown', MapSearchDropdown)
     app.component('MapLegend', MapLegend)

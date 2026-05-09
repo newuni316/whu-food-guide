@@ -16,12 +16,16 @@
       <!-- Price Range -->
       <div class="filter-group">
         <label class="filter-label">价格区间</label>
-        <div class="price-range">
-          <span class="price-val">¥{{ priceMinLabel }}</span>
-          <input v-model.number="priceMin" type="number" min="0" max="200" step="5" class="price-input" @input="onFilterChange" />
-          <span>—</span>
-          <input v-model.number="priceMax" type="number" min="0" max="200" step="5" class="price-input" @input="onFilterChange" />
-          <span class="price-val">¥{{ priceMaxLabel }}</span>
+        <div class="price-buttons">
+          <button
+            v-for="opt in priceOptions"
+            :key="opt.value"
+            class="price-btn"
+            :class="{ active: selectedPrice === opt.value }"
+            @click="selectPrice(opt.value)"
+          >
+            {{ opt.label }}
+          </button>
         </div>
       </div>
 
@@ -79,13 +83,17 @@ const emit = defineEmits<{
 }>()
 
 const searchQuery = ref('')
-const priceMin = ref(0)
-const priceMax = ref(100)
+const selectedPrice = ref('all')
 const selectedTags = ref<string[]>([])
 const sortBy = ref('rating')
 
-const priceMinLabel = computed(() => String(priceMin.value))
-const priceMaxLabel = computed(() => priceMax.value >= 100 ? '100+' : String(priceMax.value))
+const priceOptions = [
+  { label: '全部', value: 'all' },
+  { label: '¥0-14', value: '0-14' },
+  { label: '¥15-29', value: '15-29' },
+  { label: '¥30-49', value: '30-49' },
+  { label: '¥50+', value: '50-' },
+]
 
 const sortOptions = [
   { label: '评分优先', value: 'rating' },
@@ -122,10 +130,15 @@ const filtered = computed(() => {
   }
 
   // Price
-  list = list.filter((r) => {
-    const max = priceMax.value >= 100 ? Infinity : priceMax.value
-    return r.avg_price >= priceMin.value && r.avg_price <= max
-  })
+  if (selectedPrice.value !== 'all') {
+    list = list.filter((r) => {
+      const [lo, hi] = selectedPrice.value.split('-')
+      const min = Number(lo)
+      if (hi === '') return r.avg_price >= min
+      const max = Number(hi)
+      return r.avg_price >= min && r.avg_price <= max
+    })
+  }
 
   // Tags
   if (selectedTags.value.length > 0) {
@@ -163,6 +176,11 @@ function toggleTag(tag: string) {
   onFilterChange()
 }
 
+function selectPrice(val: string) {
+  selectedPrice.value = val
+  onFilterChange()
+}
+
 function setSort(val: string) {
   sortBy.value = val
   onFilterChange()
@@ -170,8 +188,7 @@ function setSort(val: string) {
 
 function resetFilters() {
   searchQuery.value = ''
-  priceMin.value = 0
-  priceMax.value = 100
+  selectedPrice.value = 'all'
   selectedTags.value = []
   sortBy.value = 'rating'
   onFilterChange()
@@ -241,33 +258,30 @@ watch(
   letter-spacing: 0.5px;
 }
 
-/* Price range */
-.price-range {
+/* Price buttons */
+.price-buttons {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
-.price-input {
-  width: 70px;
-  padding: 6px 8px;
-  border: 1.5px solid var(--vp-c-divider, #e2e2e3);
-  border-radius: 6px;
-  font-size: 13px;
+.price-btn {
+  padding: 5px 14px;
+  border: 1.5px solid var(--vp-c-divider, #e0e0e0);
+  border-radius: 8px;
   background: var(--vp-c-bg, #fff);
-  color: var(--vp-c-text-1, #1a1a1a);
-  outline: none;
-  text-align: center;
-  transition: border-color 0.2s;
+  font-size: 12px;
+  color: var(--vp-c-text-2, #555);
+  cursor: pointer;
+  transition: all 0.15s;
 }
-.price-input:focus {
+.price-btn:hover {
   border-color: var(--vp-c-brand-1, #1e88e5);
 }
-.price-val {
-  font-size: 13px;
+.price-btn.active {
+  background: var(--vp-c-brand-soft, #e3f2fd);
+  border-color: var(--vp-c-brand-1, #1e88e5);
+  color: var(--vp-c-brand-1, #1565c0);
   font-weight: 600;
-  color: var(--vp-c-text-1, #e65100);
-  min-width: 40px;
-  text-align: center;
 }
 
 /* Tags */

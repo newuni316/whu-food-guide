@@ -224,13 +224,11 @@ function matchCampus(item: MarkerItem): boolean {
 
 function handleReset() {
   resetFilters()
-  applyFilters()
 }
 
 function handleCampusFilter(key: string) {
   activeCampus.value = key
   selectedAreas.value = []
-  applyFilters()
 }
 
 function focusMarker(item: MarkerItem) {
@@ -250,9 +248,7 @@ function focusMarker(item: MarkerItem) {
 
 function fitAllMarkers() {
   if (!map || allMarkerObjs.length === 0) return
-  activeCampus.value = 'all'
   resetFilters()
-  applyFilters()
   const group = L.latLngBounds(allMarkerObjs.map(e => [e.item.lat, e.item.lng]))
   map.fitBounds(group.pad(0.2))
 }
@@ -297,7 +293,7 @@ function locateUser() {
   )
 }
 
-watch([selectedAreas, minRating, searchQuery], () => {
+watch([selectedAreas, minRating, searchQuery, activeCampus], () => {
   if (map) applyFilters()
 })
 
@@ -317,29 +313,11 @@ onMounted(async () => {
 
   L.control.zoom({ position: 'topright' }).addTo(map)
 
-  const amapTileUrl = 'http://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}'
-  const osmTileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-
-  const amapLayer = L.tileLayer(amapTileUrl, {
+  L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
     subdomains: ['1', '2', '3', '4'],
     attribution: '&copy; 高德地图',
     maxZoom: 19,
-  })
-
-  let errorCount = 0
-  let osmAdded = false
-  amapLayer.on('tileerror', () => {
-    errorCount++
-    if (errorCount > 3 && map && !osmAdded) {
-      osmAdded = true
-      map.removeLayer(amapLayer)
-      L.tileLayer(osmTileUrl, {
-        attribution: '&copy; OpenStreetMap',
-        maxZoom: 19,
-      }).addTo(map)
-    }
-  })
-  amapLayer.addTo(map)
+  }).addTo(map)
 
   markerClusterGroup = new MarkerClusterGroup({
     maxClusterRadius: 50,
