@@ -4,6 +4,12 @@ export default defineConfig({
   base: '/whu-food-guide/',
   title: '珞珈美食指北',
   description: '武汉大学美食攻略与推荐',
+  head: [
+    ['meta', { property: 'og:title', content: '珞珈美食指北 — 武汉大学美食攻略' }],
+    ['meta', { property: 'og:description', content: '武汉大学校园内外美食推荐、评分排行、地图导航，一站式解决武大人的吃饭难题。' }],
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:url', content: 'https://newuni316.github.io/whu-food-guide/' }],
+  ],
   themeConfig: {
     search: {
       provider: 'local'

@@ -33,7 +33,10 @@ jobs:
           python-version: "3.11"
 
       - name: Install Python dependencies
-        run: pip install jsonschema
+        run: pip install jsonschema pytest
+
+      - name: Run unit tests
+        run: python -m pytest tests/ -v
 
       - name: Validate and process restaurant data
         run: python scripts/process_data.py

@@ -2,11 +2,14 @@
   <div class="restaurant-card">
     <!-- Image -->
     <div class="card-image">
+      <div v-if="imageUrl && !imgLoaded" class="card-image-gradient"></div>
       <img
         v-if="imageUrl"
         :src="imageUrl"
         :alt="restaurant.name"
         loading="lazy"
+        :class="{ loaded: imgLoaded }"
+        @load="imgLoaded = true"
         @error="imgError = true"
       />
       <div v-else class="card-image-placeholder">
@@ -68,34 +71,14 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-
-interface Restaurant {
-  name: string
-  slug: string
-  campus: string
-  area: string
-  location: string
-  category: string[]
-  price_range: [number, number]
-  avg_price: number
-  rating: { taste: number; environment: number; value: number }
-  coordinates: { lat: number; lng: number }
-  address: string
-  hours: string
-  phone: string
-  recommendations: string[]
-  tags: string[]
-  review: string
-  source: string
-  last_verified: string
-  contributor: string
-}
+import type { Restaurant } from '../types'
 
 const props = defineProps<{
   restaurant: Restaurant
 }>()
 
 const imgError = ref(false)
+const imgLoaded = ref(false)
 const copied = ref(false)
 
 const imageUrl = computed(() => {
@@ -160,15 +143,37 @@ function copyAddress() {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  position: relative;
+}
+.card-image-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  animation: gradient-pulse 1.5s ease-in-out infinite alternate;
+}
+@keyframes gradient-pulse {
+  0% { opacity: 0.6; }
+  100% { opacity: 1; }
 }
 .card-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.card-image img.loaded {
+  opacity: 1;
 }
 .card-image-placeholder {
   font-size: 48px;
   opacity: 0.4;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Info */

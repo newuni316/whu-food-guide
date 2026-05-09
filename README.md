@@ -44,7 +44,7 @@ whu-food-guide/
 npm install
 
 # 处理问卷数据 (生成 markdown + markers.json)
-python3 scripts/process_survey.py
+python3 scripts/process_data.py
 
 # 启动开发服务器
 npm run docs:dev
@@ -61,7 +61,7 @@ npm run docs:build
 
 1. Fork 本仓库
 2. 在 `data/mock_survey_data.csv` 中添加你的推荐
-3. 运行 `python3 scripts/process_survey.py` 生成页面
+3. 运行 `python3 scripts/process_data.py` 生成页面
 4. 提交 Pull Request
 
 ## 许可证

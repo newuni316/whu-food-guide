@@ -1,32 +1,21 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import type { Restaurant } from '../types'
 
-interface Restaurant {
-  name: string
-  slug: string
-  campus: string
-  area: string
-  location?: string
-  category: string[]
-  price_range: [number, number]
-  avg_price: number
-  rating: { taste: number; environment: number; value: number }
-  coordinates: { lat: number; lng: number }
-  address: string
-  hours: string
-  phone: string
-  images?: string[]
-  recommendations: string[]
-  tags: string[]
-  review: string
-  source: string
-  last_verified: string
-  contributor: string
-  admin_added?: boolean
-  student_verified?: boolean
+// Lightweight auth for a personal project — not production-grade security.
+// Compares SHA-256 hash of user input against a stored hash.
+// Override at build time via window.__ADMIN_PASSWORD_HASH__ if needed.
+const DEFAULT_PASSWORD_HASH = '9995ed7c16d433353a2d257542ba2104f976c68cbfd97d8c8539de24174cdb4b'
+
+async function sha256(input: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(input)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
 }
 
-const PASSWORD = 'whufood2024'
 const authenticated = ref(false)
 const passwordInput = ref('')
 const passwordError = ref(false)
@@ -397,8 +386,10 @@ const stats = computed(() => {
 
 const maxAreaCount = computed(() => Math.max(1, ...Object.values(stats.value.areaDist)))
 
-function login() {
-  if (passwordInput.value === PASSWORD) {
+async function login() {
+  const hash = await sha256(passwordInput.value)
+  const expectedHash = (window as Record<string, unknown>).__ADMIN_PASSWORD_HASH__ as string || DEFAULT_PASSWORD_HASH
+  if (hash === expectedHash) {
     authenticated.value = true
     passwordError.value = false
     loadData()

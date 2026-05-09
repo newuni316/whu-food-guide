@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://newuni316.github.io/whu-food-guide/sitemap.xml

@@ -104,7 +104,7 @@ hours: "17:00-01:00"
 ```
 腾讯问卷导出 CSV
        ↓
-scripts/process_survey.py (数据清洗)
+scripts/process_data.py (JSON校验 + 数据生成)
        ↓
 data/restaurants/*.md (Hugo Markdown 文件)
        ↓

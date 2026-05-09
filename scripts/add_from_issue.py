@@ -23,8 +23,15 @@ CAMPUS_MAP = {
     "街道口": {"campus": "surroundings", "area": "街道口"},
 }
 
-# 简易拼音映射（常见字）
-PINYIN_MAP = {
+# 拼音转换：优先使用 pypinyin 库，回退到手工映射
+try:
+    from pypinyin import lazy_pinyin as _lazy_pinyin
+    def _pinyin_char(ch: str) -> str:
+        return _lazy_pinyin(ch)[0] if _lazy_pinyin(ch) else ch
+except ImportError:
+    _pinyin_char = None  # type: ignore
+
+_PINYIN_FALLBACK = {
     "梅": "mei", "园": "yuan", "小": "xiao", "厨": "chu", "桂": "gui",
     "枫": "feng", "樱": "ying", "工": "gong", "学": "xue", "信": "xin",
     "息": "xi", "医": "yi", "广": "guang", "八": "ba", "路": "lu",
@@ -35,12 +42,12 @@ PINYIN_MAP = {
     "汤": "tang", "粥": "zhou", "包": "bao", "饼": "bing", "粉": "fen",
     "米": "mi", "豆": "dou", "果": "guo", "瓜": "gua", "花": "hua",
     "草": "cao", "苹": "ping", "香": "xiang", "甜": "tian", "辣": "la",
-    "酸": "suan", "咸": "xian", "麻": "ma", "辣": "la", "鲜": "xian",
+    "酸": "suan", "咸": "xian", "麻": "ma", "鲜": "xian",
     "老": "lao", "新": "xin", "大": "da", "中": "zhong", "东": "dong",
     "西": "xi", "南": "nan", "北": "bei", "红": "hong", "绿": "lv",
     "黄": "huang", "白": "bai", "黑": "hei", "金": "jin", "银": "yin",
     "王": "wang", "李": "li", "张": "zhang", "刘": "liu", "陈": "chen",
-    "杨": "yang", "赵": "zhao", "黄": "huang", "周": "zhou", "吴": "wu",
+    "杨": "yang", "赵": "zhao", "周": "zhou", "吴": "wu",
     "徐": "xu", "孙": "sun", "马": "ma", "朱": "zhu", "胡": "hu",
     "郭": "guo", "何": "he", "林": "lin", "罗": "luo", "高": "gao",
     "郑": "zheng",
@@ -54,8 +61,13 @@ def to_slug(name: str) -> str:
     """将中文名称转换为 URL 友好的 slug。"""
     parts = []
     for ch in name:
-        if ch in PINYIN_MAP:
-            parts.append(PINYIN_MAP[ch])
+        if _pinyin_char:
+            py = _pinyin_char(ch)
+            if py and py != ch:
+                parts.append(py)
+                continue
+        if ch in _PINYIN_FALLBACK:
+            parts.append(_PINYIN_FALLBACK[ch])
         elif ch.isascii() and ch.isalnum():
             parts.append(ch.lower())
         elif ch in (" ", "-", "_"):

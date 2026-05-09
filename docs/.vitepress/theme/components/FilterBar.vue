@@ -83,28 +83,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-
-interface Restaurant {
-  name: string
-  slug: string
-  campus: string
-  area: string
-  location: string
-  category: string[]
-  price_range: [number, number]
-  avg_price: number
-  rating: { taste: number; environment: number; value: number }
-  coordinates: { lat: number; lng: number }
-  address: string
-  hours: string
-  phone: string
-  recommendations: string[]
-  tags: string[]
-  review: string
-  source: string
-  last_verified: string
-  contributor: string
-}
+import type { Restaurant } from '../types'
 
 const props = defineProps<{
   restaurants: Restaurant[]
