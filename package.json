@@ -16,7 +16,6 @@
     "vue": "^3.4.0"
   },
   "devDependencies": {
-    "vitepress": "^1.6.0",
-    "vitepress-plugin-sitemap": "^0.2.0"
+    "vitepress": "^1.6.0"
   }
 }
