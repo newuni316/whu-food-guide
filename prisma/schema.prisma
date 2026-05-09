@@ -1,0 +1,340 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Campus {
+  wenli
+  gongxue
+  xinxixue
+  yixue
+  surroundings
+}
+
+enum Area {
+  meiyuan
+  guiyuan
+  fengyuan
+  yingyuan
+  gongxue
+  xinxixue
+  yixue
+  guangbalu
+  jiedaokou
+}
+
+enum UserRole {
+  user
+  admin
+  superadmin
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String?
+  email         String?  @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          UserRole @default(user)
+  level         Int      @default(1)
+  experience    Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  accounts      Account[]
+  sessions      Session[]
+  profile       Profile?
+  reviews       Review[]
+  comments      Comment[]
+  favorites     Favorite[]
+  browsingHistories BrowsingHistory[]
+  aiChats       AiChat[]
+  notifications Notification[]
+  achievements  UserAchievement[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Profile {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  bio       String?
+  avatarUrl String?
+  phone     String?
+  grade     String?
+  major     String?
+  preferences Json? @default("{}")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Cafeteria {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  campus       Campus
+  area         Area
+  address      String?
+  hours        String?
+  phone        String?
+  coordinates  Json
+  images       String[]
+  tags         String[]
+  source       String?
+  contributor  String?
+  lastVerified DateTime?
+  review       String?
+  rating       Json?
+  recommendations String[] @default([])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  stalls   Stall[]
+  rankings Ranking[]
+}
+
+model Stall {
+  id          String   @id @default(cuid())
+  name        String
+  cafeteriaId String
+  category    String[]
+  priceRange  Int[]
+  description String?
+  images      String[]
+  tags        String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  cafeteria Cafeteria @relation(fields: [cafeteriaId], references: [id], onDelete: Cascade)
+  dishes    Dish[]
+}
+
+model Dish {
+  id          String   @id @default(cuid())
+  name        String
+  stallId     String
+  price       Float?
+  images      String[]
+  description String?
+  category    String?
+  calories    Int?
+  tags        String[]
+  rating      Float?
+  reviewCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  stall      Stall              @relation(fields: [stallId], references: [id], onDelete: Cascade)
+  reviews    Review[]
+  favorites  Favorite[]
+  embeddings DishEmbedding?
+  dishImages DishImage[]
+  browsingHistories BrowsingHistory[]
+}
+
+model DishImage {
+  id        String   @id @default(cuid())
+  dishId    String
+  url       String
+  alt       String?
+  width     Int?
+  height    Int?
+  createdAt DateTime @default(now())
+
+  dish Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  content   String
+  rating    Int
+  images    String[]
+  likes     Int      @default(0)
+  userId    String
+  dishId    String
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dish     Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  parent   Review?  @relation("ReviewReplies", fields: [parentId], references: [id])
+  replies  Review[] @relation("ReviewReplies")
+  comments Comment[]
+
+  @@index([dishId])
+  @@index([userId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  likes     Int      @default(0)
+  userId    String
+  reviewId  String
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  review  Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  parent  Comment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies Comment[] @relation("CommentReplies")
+
+  @@index([reviewId])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  dishId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dish Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dishId])
+  @@index([userId])
+  @@index([dishId])
+}
+
+model Ranking {
+  id       String @id @default(cuid())
+  type     String
+  label    String
+  score    Float
+  rank     Int
+  cafeteriaId String
+  period   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cafeteria Cafeteria @relation(fields: [cafeteriaId], references: [id], onDelete: Cascade)
+
+  @@index([type, period])
+  @@index([score])
+}
+
+model BrowsingHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  dishId    String
+  count     Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dish Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dishId])
+  @@index([userId])
+}
+
+model AiChat {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String?
+  messages  Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model DishEmbedding {
+  id        String @id @default(cuid())
+  dishId    String @unique
+  embedding String
+
+  dish Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  content   String?
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+}
+
+model UserAchievement {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+}
+
+model AdminLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  action    String
+  target    String?
+  detail    Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([adminId])
+  @@index([createdAt])
+}
