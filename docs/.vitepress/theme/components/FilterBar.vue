@@ -17,26 +17,11 @@
       <div class="filter-group">
         <label class="filter-label">价格区间</label>
         <div class="price-range">
-          <span class="price-val">¥{{ priceMin }}</span>
-          <input
-            v-model.number="priceMin"
-            type="range"
-            min="0"
-            max="100"
-            step="5"
-            class="range-slider"
-            @input="onFilterChange"
-          />
-          <input
-            v-model.number="priceMax"
-            type="range"
-            min="0"
-            max="100"
-            step="5"
-            class="range-slider"
-            @input="onFilterChange"
-          />
-          <span class="price-val">¥{{ priceMax >= 100 ? '100+' : priceMax }}</span>
+          <span class="price-val">¥{{ priceMinLabel }}</span>
+          <input v-model.number="priceMin" type="number" min="0" max="200" step="5" class="price-input" @input="onFilterChange" />
+          <span>—</span>
+          <input v-model.number="priceMax" type="number" min="0" max="200" step="5" class="price-input" @input="onFilterChange" />
+          <span class="price-val">¥{{ priceMaxLabel }}</span>
         </div>
       </div>
 
@@ -98,6 +83,9 @@ const priceMin = ref(0)
 const priceMax = ref(100)
 const selectedTags = ref<string[]>([])
 const sortBy = ref('rating')
+
+const priceMinLabel = computed(() => String(priceMin.value))
+const priceMaxLabel = computed(() => priceMax.value >= 100 ? '100+' : String(priceMax.value))
 
 const sortOptions = [
   { label: '评分优先', value: 'rating' },
@@ -259,10 +247,20 @@ watch(
   align-items: center;
   gap: 10px;
 }
-.range-slider {
-  flex: 1;
-  accent-color: var(--vp-c-brand-1, #1e88e5);
-  height: 4px;
+.price-input {
+  width: 70px;
+  padding: 6px 8px;
+  border: 1.5px solid var(--vp-c-divider, #e2e2e3);
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--vp-c-bg, #fff);
+  color: var(--vp-c-text-1, #1a1a1a);
+  outline: none;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+.price-input:focus {
+  border-color: var(--vp-c-brand-1, #1e88e5);
 }
 .price-val {
   font-size: 13px;

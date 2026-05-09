@@ -250,6 +250,7 @@ function focusMarker(item: MarkerItem) {
 
 function fitAllMarkers() {
   if (!map || allMarkerObjs.length === 0) return
+  activeCampus.value = 'all'
   resetFilters()
   applyFilters()
   const group = L.latLngBounds(allMarkerObjs.map(e => [e.item.lat, e.item.lng]))
@@ -316,7 +317,7 @@ onMounted(async () => {
 
   L.control.zoom({ position: 'topright' }).addTo(map)
 
-  const amapTileUrl = 'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}'
+  const amapTileUrl = 'http://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}'
   const osmTileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 
   const amapLayer = L.tileLayer(amapTileUrl, {
