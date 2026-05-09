@@ -1,18 +1,27 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 
-interface MarkerItem {
+interface Restaurant {
   name: string
-  location: string
+  slug: string
+  campus: string
   area: string
-  rating: number
+  location?: string
+  category: string[]
+  price_range: [number, number]
   avg_price: number
+  rating: { taste: number; environment: number; value: number }
+  coordinates: { lat: number; lng: number }
+  address: string
+  hours: string
+  phone: string
+  images?: string[]
+  recommendations: string[]
   tags: string[]
-  recommendation: string
-  lat: number
-  lng: number
-  image_url?: string
-  review?: string
+  review: string
+  source: string
+  last_verified: string
+  contributor: string
   admin_added?: boolean
   student_verified?: boolean
 }
@@ -22,7 +31,7 @@ const authenticated = ref(false)
 const passwordInput = ref('')
 const passwordError = ref(false)
 
-const markers = ref<MarkerItem[]>([])
+const markers = ref<Restaurant[]>([])
 const filterArea = ref('')
 const sortField = ref<'rating' | 'avg_price' | 'name'>('rating')
 const sortDir = ref<'desc' | 'asc'>('desc')
@@ -30,12 +39,24 @@ const sortDir = ref<'desc' | 'asc'>('desc')
 // Edit state
 const editingIndex = ref<number | null>(null)
 const showAddForm = ref(false)
-const formData = ref<MarkerItem>({
-  name: '', location: '', area: '', rating: 4, avg_price: 0,
-  tags: [], recommendation: '', lat: 30.538, lng: 114.367, image_url: '', review: '',
-  admin_added: false, student_verified: false
-})
+
+function defaultForm(): Restaurant {
+  return {
+    name: '', slug: '', campus: 'wenli', area: '梅园', location: '',
+    category: [], price_range: [10, 20], avg_price: 15,
+    rating: { taste: 4, environment: 4, value: 4 },
+    coordinates: { lat: 30.538, lng: 114.367 },
+    address: '', hours: '', phone: '', images: [],
+    recommendations: [], tags: [], review: '',
+    source: '管理后台', last_verified: new Date().toISOString().slice(0, 10), contributor: '',
+    admin_added: false, student_verified: false,
+  }
+}
+
+const formData = ref<Restaurant>(defaultForm())
 const tagInput = ref('')
+const categoryInput = ref('')
+const recInput = ref('')
 
 // ── Area Options (cascading) ──
 const areaOptions = [
@@ -81,7 +102,9 @@ watch(selectedMajorArea, () => {
   const children = currentChildren.value
   if (children.length > 0) {
     formData.value.area = children[0].key
-    formData.value.location = `${areaOptions.find(g => g.key === selectedMajorArea.value)?.label}-${children[0].key}`
+    formData.value.campus = selectedMajorArea.value
+    const label = areaOptions.find(g => g.key === selectedMajorArea.value)?.label || ''
+    formData.value.location = `${label}-${children[0].key}`
   }
 })
 
@@ -90,6 +113,7 @@ watch(() => formData.value.area, (newArea) => {
   const group = areaOptions.find(g => g.children.some(c => c.key === newArea))
   if (group) {
     selectedMajorArea.value = group.key
+    formData.value.campus = group.key
     formData.value.location = `${group.label}-${newArea}`
   }
 })
@@ -125,46 +149,23 @@ function saveGithubConfig() {
   showToast('GitHub 配置已保存')
 }
 
-function markersToCSV(): string {
-  const header = 'store_name,location,area,rating,tags,recommendation,review,avg_price,coordinates'
-  const rows = markers.value.map(m => {
-    const coords = `${m.lat}/${m.lng}`
-    const tags = m.tags.join(',')
-    const review = (m.review || '').replace(/"/g, '""')
-    const rec = m.recommendation.replace(/"/g, '""')
-    return `"${m.name}","${m.location}","${m.area}",${m.rating},"${tags}","${rec}","${review}",${m.avg_price},"${coords}"`
+function makeSlug(r: Restaurant): string {
+  if (r.slug) return r.slug
+  // Generate a simple slug from name + area
+  const pinyin = r.name.replace(/[一-鿿]/g, (ch) => {
+    const map: Record<string, string> = {
+      '老': 'lao', '干': 'gan', '妈': 'ma', '炒': 'chao', '饭': 'fan',
+      '梅': 'mei', '园': 'yuan', '桂': 'gui', '枫': 'feng', '樱': 'ying',
+      '工': 'gong', '学': 'xue', '部': 'bu', '医': 'yi', '信': 'xin', '息': 'xi',
+    }
+    return map[ch] || ''
   })
-  return [header, ...rows].join('\n')
+  return pinyin || `r-${Date.now()}`
 }
 
-function csvToMarkers(csv: string): MarkerItem[] {
-  const lines = csv.trim().split('\n')
-  if (lines.length < 2) return []
-  const result: MarkerItem[] = []
-  for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)
-    if (!cols || cols.length < 9) continue
-    const clean = (s: string) => s.replace(/^"|"$/g, '').replace(/""/g, '"')
-    const coords = clean(cols[8]).split('/')
-    result.push({
-      name: clean(cols[0]),
-      location: clean(cols[1]),
-      area: clean(cols[2]),
-      rating: parseFloat(cols[3]) || 0,
-      tags: clean(cols[4]).split(',').filter(Boolean),
-      recommendation: clean(cols[5]),
-      review: clean(cols[6]),
-      avg_price: parseInt(cols[7]) || 0,
-      lat: parseFloat(coords[0]) || 30.538,
-      lng: parseFloat(coords[1]) || 114.367,
-    })
-  }
-  return result
-}
-
-async function getFileSHA(): Promise<string | null> {
+async function getFileSHA(path: string): Promise<string | null> {
   const { token, owner, repo } = githubConfig.value
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/data/mock_survey_data.csv`
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`
   const res = await fetch(url, {
     headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
   })
@@ -183,28 +184,44 @@ async function syncToGithub() {
   }
   syncing.value = true
   try {
-    const sha = await getFileSHA()
-    const csv = markersToCSV()
-    const body: Record<string, unknown> = {
-      message: `admin: 更新餐厅数据 - ${new Date().toISOString().slice(0, 10)}`,
-      content: btoa(unescape(encodeURIComponent(csv))),
+    const date = new Date().toISOString().slice(0, 10)
+    let successCount = 0
+    let failCount = 0
+
+    for (const r of markers.value) {
+      const slug = makeSlug(r)
+      const path = `data/restaurants/${slug}.json`
+      const json = JSON.stringify(r, null, 2) + '\n'
+      const content = btoa(unescape(encodeURIComponent(json)))
+
+      const sha = await getFileSHA(path)
+      const body: Record<string, unknown> = {
+        message: `admin: 更新 ${r.name} - ${date}`,
+        content,
+      }
+      if (sha) body.sha = sha
+
+      const { token, owner, repo } = githubConfig.value
+      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      })
+      if (res.ok) {
+        successCount++
+      } else {
+        failCount++
+      }
     }
-    if (sha) body.sha = sha
-    const { token, owner, repo } = githubConfig.value
-    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data/mock_survey_data.csv`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `token ${token}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    })
-    if (res.ok) {
-      showToast('同步到云端成功')
+
+    if (failCount === 0) {
+      showToast(`同步 ${successCount} 个 JSON 文件到云端成功`)
     } else {
-      const err = await res.json()
-      showToast(`同步失败: ${err.message || res.statusText}`, 'error')
+      showToast(`同步完成: ${successCount} 成功, ${failCount} 失败`, failCount > 0 ? 'error' : 'success')
     }
   } catch (e: unknown) {
     showToast(`网络错误: ${e instanceof Error ? e.message : '未知错误'}`, 'error')
@@ -222,20 +239,31 @@ async function pullFromGithub() {
   syncing.value = true
   try {
     const { token, owner, repo } = githubConfig.value
-    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data/mock_survey_data.csv`, {
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data/restaurants`, {
       headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const data = await res.json()
-    const csv = decodeURIComponent(escape(atob(data.content)))
-    const parsed = csvToMarkers(csv)
-    if (parsed.length === 0) {
+    const files = await res.json()
+    const jsonFiles = files.filter((f: { name: string }) => f.name.endsWith('.json') && f.name !== 'template.json')
+
+    const pulled: Restaurant[] = []
+    for (const file of jsonFiles) {
+      const fileRes = await fetch(file.download_url)
+      if (fileRes.ok) {
+        try {
+          const data = await fileRes.json()
+          pulled.push(data)
+        } catch {}
+      }
+    }
+
+    if (pulled.length === 0) {
       showToast('云端数据为空或解析失败', 'error')
       return
     }
-    markers.value = parsed
+    markers.value = pulled
     saveToStorage()
-    showToast(`从云端拉取 ${parsed.length} 条数据成功`)
+    showToast(`从云端拉取 ${pulled.length} 条数据成功`)
   } catch (e: unknown) {
     showToast(`拉取失败: ${e instanceof Error ? e.message : '未知错误'}`, 'error')
   } finally {
@@ -246,8 +274,8 @@ async function pullFromGithub() {
 // ── Smart Text Parsing ──
 const parseText = ref('')
 
-function parseSharedText(text: string): Partial<MarkerItem> {
-  const result: Partial<MarkerItem> = {}
+function parseSharedText(text: string): Partial<Restaurant> {
+  const result: Partial<Restaurant> = {}
 
   // 1. Extract store name: 【店名】or「店名」
   const nameMatch = text.match(/[【「]([^】」]+)[】」]/)
@@ -257,10 +285,12 @@ function parseSharedText(text: string): Partial<MarkerItem> {
   const addressMatch = text.match(/地址[：:]\s*(.+?)[\n,，。]/)
   if (addressMatch) {
     const addr = addressMatch[1]
+    result.address = addr
     for (const group of areaOptions) {
       for (const child of group.children) {
         if (addr.includes(child.key)) {
           result.area = child.key
+          result.campus = group.key
           result.location = `${group.label}-${child.key}`
           break
         }
@@ -270,31 +300,34 @@ function parseSharedText(text: string): Partial<MarkerItem> {
       if (addr.includes(group.label.replace('学部', ''))) {
         if (!result.area && group.children.length > 0) {
           result.area = group.children[0].key
+          result.campus = group.key
           result.location = `${group.label}-${group.children[0].key}`
         }
       }
     }
   }
 
-  // 3. Extract URL
-  const urlMatch = text.match(/https?:\/\/[^\s<>"]+/)
-  if (urlMatch) result.image_url = urlMatch[0]
-
-  // 4. Extract rating (e.g., "4.5分" or "评分：4.5")
+  // 3. Extract rating (e.g., "4.5分" or "评分：4.5")
   const ratingMatch = text.match(/(\d\.?\d?)\s*[分评]/)
   if (ratingMatch) {
     const r = parseFloat(ratingMatch[1])
-    if (r >= 1 && r <= 5) result.rating = r
+    if (r >= 1 && r <= 5) {
+      result.rating = { taste: r, environment: r, value: r }
+    }
   }
 
-  // 5. Extract price (e.g., "人均：¥25" or "人均25元")
+  // 4. Extract price (e.g., "人均：¥25" or "人均25元")
   const priceMatch = text.match(/人均[：:]?\s*[¥￥]?\s*(\d+)/)
-  if (priceMatch) result.avg_price = parseInt(priceMatch[1])
+  if (priceMatch) {
+    const price = parseInt(priceMatch[1])
+    result.avg_price = price
+    result.price_range = [Math.max(0, price - 10), price + 10]
+  }
 
-  // 6. Extract tags from common keywords
+  // 5. Extract tags from common keywords
   const tagKeywords = ['火锅', '烧烤', '奶茶', '咖啡', '面馆', '快餐', '川菜', '湘菜', '粤菜', '日料', '韩料', '西餐', '甜品', '小吃']
   const foundTags = tagKeywords.filter(k => text.includes(k))
-  if (foundTags.length > 0) result.tags = foundTags
+  if (foundTags.length > 0) result.category = foundTags
 
   return result
 }
@@ -308,13 +341,15 @@ function doParseText() {
   let filled = 0
   if (result.name && !formData.value.name) { formData.value.name = result.name; filled++ }
   if (result.area && !formData.value.area) { formData.value.area = result.area; filled++ }
+  if (result.campus && !formData.value.campus) { formData.value.campus = result.campus; filled++ }
   if (result.location && !formData.value.location) { formData.value.location = result.location; filled++ }
-  if (result.rating && formData.value.rating === 4) { formData.value.rating = result.rating; filled++ }
-  if (result.avg_price && formData.value.avg_price === 0) { formData.value.avg_price = result.avg_price; filled++ }
-  if (result.image_url && !formData.value.image_url) { formData.value.image_url = result.image_url; filled++ }
-  if (result.tags && formData.value.tags.length === 0) {
-    formData.value.tags = result.tags
-    tagInput.value = result.tags.join(', ')
+  if (result.address && !formData.value.address) { formData.value.address = result.address; filled++ }
+  if (result.rating && formData.value.rating.taste === 4) { formData.value.rating = result.rating; filled++ }
+  if (result.avg_price && formData.value.avg_price === 15) { formData.value.avg_price = result.avg_price; filled++ }
+  if (result.price_range) { formData.value.price_range = result.price_range; filled++ }
+  if (result.category && formData.value.category.length === 0) {
+    formData.value.category = result.category
+    categoryInput.value = result.category.join(', ')
     filled++
   }
   parseText.value = ''
@@ -336,15 +371,24 @@ const filtered = computed(() => {
   list.sort((a, b) => {
     const dir = sortDir.value === 'desc' ? -1 : 1
     if (sortField.value === 'name') return dir * a.name.localeCompare(b.name, 'zh')
-    return dir * (a[sortField.value] - b[sortField.value])
+    if (sortField.value === 'rating') {
+      const aAvg = (a.rating.taste + a.rating.environment + a.rating.value) / 3
+      const bAvg = (b.rating.taste + b.rating.environment + b.rating.value) / 3
+      return dir * (aAvg - bAvg)
+    }
+    return dir * (a.avg_price - b.avg_price)
   })
   return list
 })
 
+function getAvgRating(r: Restaurant): number {
+  return (r.rating.taste + r.rating.environment + r.rating.value) / 3
+}
+
 const stats = computed(() => {
   const total = markers.value.length
   if (total === 0) return { total: 0, avgRating: 0, avgPrice: 0, areaDist: {} as Record<string, number> }
-  const avgRating = +(markers.value.reduce((s, m) => s + m.rating, 0) / total).toFixed(1)
+  const avgRating = +(markers.value.reduce((s, m) => s + getAvgRating(m), 0) / total).toFixed(1)
   const avgPrice = +(markers.value.reduce((s, m) => s + m.avg_price, 0) / total).toFixed(1)
   const areaDist: Record<string, number> = {}
   markers.value.forEach(m => { areaDist[m.area] = (areaDist[m.area] || 0) + 1 })
@@ -363,11 +407,61 @@ function login() {
   }
 }
 
+function normalizeLegacyData(data: Record<string, unknown>[]): Restaurant[] {
+  return data.map((item) => {
+    // Already new format
+    if (item.rating && typeof item.rating === 'object' && 'taste' in (item.rating as object)) {
+      return item as unknown as Restaurant
+    }
+    // Legacy markers.json format — convert
+    const legacy = item as Record<string, unknown>
+    const lat = (legacy.lat as number) || (legacy.coordinates as { lat?: number })?.lat || 30.538
+    const lng = (legacy.lng as number) || (legacy.coordinates as { lng?: number })?.lng || 114.367
+    const ratingNum = (legacy.rating as number) || 4
+    return {
+      name: (legacy.name as string) || '',
+      slug: '',
+      campus: 'wenli',
+      area: (legacy.area as string) || '',
+      location: (legacy.location as string) || '',
+      category: [],
+      price_range: [Math.max(0, (legacy.avg_price as number) - 10), (legacy.avg_price as number) + 10],
+      avg_price: (legacy.avg_price as number) || 0,
+      rating: { taste: ratingNum, environment: ratingNum, value: ratingNum },
+      coordinates: { lat, lng },
+      address: '',
+      hours: '',
+      phone: '',
+      recommendations: (legacy.recommendation as string) ? [(legacy.recommendation as string)] : [],
+      tags: (legacy.tags as string[]) || [],
+      review: (legacy.review as string) || '',
+      source: '旧数据',
+      last_verified: '',
+      contributor: '',
+      admin_added: (legacy.admin_added as boolean) || false,
+      student_verified: (legacy.student_verified as boolean) || false,
+    } as Restaurant
+  })
+}
+
 async function loadData() {
   try {
-    const res = await fetch(import.meta.env.BASE_URL + 'markers.json')
-    if (res.ok) markers.value = await res.json()
+    const res = await fetch(import.meta.env.BASE_URL + 'restaurants.json')
+    if (res.ok) {
+      const data = await res.json()
+      markers.value = data
+    }
   } catch {}
+  // Fallback to markers.json if restaurants.json not available
+  if (markers.value.length === 0) {
+    try {
+      const res = await fetch(import.meta.env.BASE_URL + 'markers.json')
+      if (res.ok) {
+        const data = await res.json()
+        markers.value = normalizeLegacyData(data)
+      }
+    } catch {}
+  }
   // Override with localStorage if exists
   const saved = localStorage.getItem('whufood_markers')
   if (saved) {
@@ -381,12 +475,11 @@ function saveToStorage() {
 }
 
 function resetForm() {
-  formData.value = {
-    name: '', location: '', area: '', rating: 4, avg_price: 0,
-    tags: [], recommendation: '', lat: 30.538, lng: 114.367, image_url: '', review: '',
-    admin_added: false, student_verified: false
-  }
+  formData.value = defaultForm()
   tagInput.value = ''
+  categoryInput.value = ''
+  recInput.value = ''
+  selectedMajorArea.value = ''
 }
 
 function startAdd() {
@@ -397,8 +490,10 @@ function startAdd() {
 
 function startEdit(index: number) {
   const m = filtered.value[index]
-  formData.value = { ...m, tags: [...m.tags], image_url: m.image_url || '', review: m.review || '', admin_added: m.admin_added || false, student_verified: m.student_verified || false }
+  formData.value = { ...m, tags: [...m.tags], category: [...m.category], recommendations: [...m.recommendations] }
   tagInput.value = m.tags.join(', ')
+  categoryInput.value = m.category.join(', ')
+  recInput.value = m.recommendations.join('、')
   // Auto-detect major area for cascading select
   const group = areaOptions.find(g => g.children.some(c => c.key === m.area))
   selectedMajorArea.value = group ? group.key : ''
@@ -416,9 +511,27 @@ function addTagFromInput() {
   formData.value.tags = tagInput.value.split(/[,，]/).map(t => t.trim()).filter(Boolean)
 }
 
+function addCategoryFromInput() {
+  formData.value.category = categoryInput.value.split(/[,，]/).map(t => t.trim()).filter(Boolean)
+}
+
+function addRecFromInput() {
+  formData.value.recommendations = recInput.value.split(/[、，,]/).map(t => t.trim()).filter(Boolean)
+}
+
 function saveForm() {
   addTagFromInput()
+  addCategoryFromInput()
+  addRecFromInput()
   if (!formData.value.name || !formData.value.area) return
+
+  // Auto-generate slug if empty
+  if (!formData.value.slug) {
+    formData.value.slug = makeSlug(formData.value)
+  }
+  // Sync campus from area
+  const group = areaOptions.find(g => g.children.some(c => c.key === formData.value.area))
+  if (group) formData.value.campus = group.key
 
   if (editingIndex.value !== null) {
     const realItem = filtered.value[editingIndex.value]
@@ -456,19 +569,24 @@ function sortIcon(field: string) {
 }
 
 function exportCSV() {
-  const header = 'store_name,location,area,rating,tags,recommendation,review,avg_price,coordinates\n'
+  const header = 'name,slug,campus,area,category,avg_price,rating_taste,rating_environment,rating_value,lat,lng,address,hours,phone,recommendations,tags,review,source,last_verified,contributor'
   const rows = markers.value.map(m => {
-    const coords = `${m.lat}/${m.lng}`
-    const tags = m.tags.join(',')
-    const review = (m.review || '').replace(/"/g, '""')
-    const rec = m.recommendation.replace(/"/g, '""')
-    return `"${m.name}","${m.location}","${m.area}",${m.rating},"${tags}","${rec}","${review}",${m.avg_price},"${coords}"`
+    const esc = (s: string) => `"${(s || '').replace(/"/g, '""')}"`
+    return [
+      esc(m.name), esc(m.slug), esc(m.campus), esc(m.area),
+      esc(m.category.join(',')), m.avg_price,
+      m.rating.taste, m.rating.environment, m.rating.value,
+      m.coordinates.lat, m.coordinates.lng,
+      esc(m.address), esc(m.hours), esc(m.phone),
+      esc(m.recommendations.join(',')), esc(m.tags.join(',')),
+      esc(m.review), esc(m.source), esc(m.last_verified), esc(m.contributor),
+    ].join(',')
   }).join('\n')
-  downloadFile(header + rows, 'mock_survey_data.csv', 'text/csv')
+  downloadFile(header + '\n' + rows, 'restaurants.csv', 'text/csv')
 }
 
 function exportJSON() {
-  downloadFile(JSON.stringify(markers.value, null, 2), 'markers.json', 'application/json')
+  downloadFile(JSON.stringify(markers.value, null, 2), 'restaurants.json', 'application/json')
 }
 
 function downloadFile(content: string, filename: string, type: string) {
@@ -481,8 +599,9 @@ function downloadFile(content: string, filename: string, type: string) {
   URL.revokeObjectURL(url)
 }
 
-function ratingStars(r: number) {
-  return '★'.repeat(Math.round(r)) + '☆'.repeat(5 - Math.round(r))
+function ratingStars(r: { taste: number; environment: number; value: number }) {
+  const avg = (r.taste + r.environment + r.value) / 3
+  return '★'.repeat(Math.round(avg)) + '☆'.repeat(5 - Math.round(avg))
 }
 </script>
 
@@ -504,7 +623,7 @@ function ratingStars(r: number) {
     <!-- Login -->
     <div v-if="!authenticated" class="login-box">
       <div class="login-card">
-        <h2>🔐 管理后台</h2>
+        <h2>管理后台</h2>
         <p>请输入管理密码</p>
         <div class="login-form">
           <input
@@ -591,10 +710,10 @@ function ratingStars(r: number) {
         </div>
         <div class="toolbar-right">
           <button class="btn btn-success" @click="startAdd">+ 新增</button>
-          <button class="btn btn-cloud" @click="syncToGithub" :disabled="syncing">☁️ 同步到云端</button>
-          <button class="btn btn-cloud" @click="pullFromGithub" :disabled="syncing">📥 从云端拉取</button>
+          <button class="btn btn-cloud" @click="syncToGithub" :disabled="syncing">同步到云端</button>
+          <button class="btn btn-cloud" @click="pullFromGithub" :disabled="syncing">从云端拉取</button>
           <button class="btn btn-outline" @click="exportCSV">导出 CSV</button>
-          <button class="btn btn-outline" @click="exportJSON">导出 markers.json</button>
+          <button class="btn btn-outline" @click="exportJSON">导出 JSON</button>
         </div>
       </div>
 
@@ -604,15 +723,19 @@ function ratingStars(r: number) {
 
         <!-- Smart Text Parsing -->
         <div class="parse-section">
-          <label class="parse-label">🔍 智能识别 - 粘贴美团/高德/点评分享文本</label>
+          <label class="parse-label">智能识别 - 粘贴美团/高德/点评分享文本</label>
           <textarea v-model="parseText" class="form-input form-textarea parse-textarea" placeholder="粘贴分享文本，自动识别店名、地址、评分、人均等信息..."></textarea>
-          <button class="btn btn-parse" @click="doParseText">🔍 一键解析并填充</button>
+          <button class="btn btn-parse" @click="doParseText">一键解析并填充</button>
         </div>
 
         <div class="form-grid">
           <div class="form-group">
             <label>名称 *</label>
             <input v-model="formData.name" class="form-input" placeholder="餐厅名称" />
+          </div>
+          <div class="form-group">
+            <label>Slug</label>
+            <input v-model="formData.slug" class="form-input" placeholder="自动生成（留空即可）" />
           </div>
           <div class="form-group">
             <label>大板块 *</label>
@@ -633,20 +756,56 @@ function ratingStars(r: number) {
             <input v-model="formData.location" class="form-input" placeholder="如：文理学部-梅园" readonly />
           </div>
           <div class="form-group">
-            <label>评分 (1-5)</label>
-            <input v-model.number="formData.rating" type="number" min="1" max="5" step="0.5" class="form-input" />
+            <label>分类 (逗号分隔)</label>
+            <input v-model="categoryInput" class="form-input" placeholder="小吃,快餐" @input="addCategoryFromInput" />
+          </div>
+          <div class="form-group">
+            <label>口味评分 (1-5)</label>
+            <input v-model.number="formData.rating.taste" type="number" min="1" max="5" step="0.5" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label>环境评分 (1-5)</label>
+            <input v-model.number="formData.rating.environment" type="number" min="1" max="5" step="0.5" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label>性价比评分 (1-5)</label>
+            <input v-model.number="formData.rating.value" type="number" min="1" max="5" step="0.5" class="form-input" />
           </div>
           <div class="form-group">
             <label>人均消费 (元)</label>
             <input v-model.number="formData.avg_price" type="number" min="0" class="form-input" />
           </div>
           <div class="form-group">
+            <label>价格区间 (最低)</label>
+            <input v-model.number="formData.price_range[0]" type="number" min="0" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label>价格区间 (最高)</label>
+            <input v-model.number="formData.price_range[1]" type="number" min="0" class="form-input" />
+          </div>
+          <div class="form-group full-width">
+            <label>地址</label>
+            <input v-model="formData.address" class="form-input" placeholder="详细地址" />
+          </div>
+          <div class="form-group">
+            <label>营业时间</label>
+            <input v-model="formData.hours" class="form-input" placeholder="10:00-22:00" />
+          </div>
+          <div class="form-group">
+            <label>电话</label>
+            <input v-model="formData.phone" class="form-input" placeholder="可选" />
+          </div>
+          <div class="form-group">
             <label>标签 (逗号分隔)</label>
             <input v-model="tagInput" class="form-input" placeholder="性价比高,量大实惠" @input="addTagFromInput" />
           </div>
+          <div class="form-group">
+            <label>数据来源</label>
+            <input v-model="formData.source" class="form-input" placeholder="问卷/投稿/管理后台" />
+          </div>
           <div class="form-group full-width">
-            <label>推荐菜品</label>
-            <input v-model="formData.recommendation" class="form-input" placeholder="菜品1、菜品2" />
+            <label>推荐菜品 (顿号分隔)</label>
+            <input v-model="recInput" class="form-input" placeholder="菜品1、菜品2" @input="addRecFromInput" />
           </div>
           <div class="form-group full-width">
             <label>评价</label>
@@ -654,15 +813,11 @@ function ratingStars(r: number) {
           </div>
           <div class="form-group">
             <label>纬度 (lat)</label>
-            <input v-model.number="formData.lat" type="number" step="0.0001" class="form-input" />
+            <input v-model.number="formData.coordinates.lat" type="number" step="0.0001" class="form-input" />
           </div>
           <div class="form-group">
             <label>经度 (lng)</label>
-            <input v-model.number="formData.lng" type="number" step="0.0001" class="form-input" />
-          </div>
-          <div class="form-group full-width">
-            <label>图片 URL (可选)</label>
-            <input v-model="formData.image_url" class="form-input" placeholder="https://..." />
+            <input v-model.number="formData.coordinates.lng" type="number" step="0.0001" class="form-input" />
           </div>
           <div class="form-group">
             <label class="checkbox-label">
@@ -690,6 +845,7 @@ function ratingStars(r: number) {
             <tr>
               <th class="sortable" @click="toggleSort('name')">名称 {{ sortIcon('name') }}</th>
               <th>区域</th>
+              <th>分类</th>
               <th class="sortable" @click="toggleSort('rating')">评分 {{ sortIcon('rating') }}</th>
               <th class="sortable" @click="toggleSort('avg_price')">人均 {{ sortIcon('avg_price') }}</th>
               <th>标签</th>
@@ -699,13 +855,18 @@ function ratingStars(r: number) {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(item, idx) in filtered" :key="item.name + item.area" class="table-row">
+            <tr v-for="(item, idx) in filtered" :key="item.slug || item.name + item.area" class="table-row">
               <td class="name-cell">
                 <div class="name-text">{{ item.name }}</div>
-                <div class="location-text">{{ item.location }}</div>
+                <div class="location-text">{{ item.location || item.address }}</div>
               </td>
               <td><span class="area-badge">{{ item.area }}</span></td>
-              <td><span class="rating-stars">{{ ratingStars(item.rating) }}</span> {{ item.rating }}</td>
+              <td>
+                <div class="tags-cell">
+                  <span v-for="c in item.category" :key="c" class="tag">{{ c }}</span>
+                </div>
+              </td>
+              <td><span class="rating-stars">{{ ratingStars(item.rating) }}</span> {{ getAvgRating(item).toFixed(1) }}</td>
               <td>¥{{ item.avg_price }}</td>
               <td>
                 <div class="tags-cell">
@@ -716,7 +877,7 @@ function ratingStars(r: number) {
                 <span v-if="item.admin_added" class="badge badge-admin">管理</span>
                 <span v-if="item.student_verified" class="badge badge-student">认证</span>
               </td>
-              <td class="rec-cell">{{ item.recommendation }}</td>
+              <td class="rec-cell">{{ item.recommendations.join('、') }}</td>
               <td class="action-cell">
                 <button class="btn-icon" title="编辑" @click="startEdit(idx)">✏️</button>
                 <button class="btn-icon" title="删除" @click="deleteItem(idx)">🗑️</button>
