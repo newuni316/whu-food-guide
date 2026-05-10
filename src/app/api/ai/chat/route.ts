@@ -3,11 +3,29 @@ import { ValidationError } from '@/lib/errors';
 import { getLLMClient, SYSTEM_PROMPT } from '@/lib/ai';
 import { retrieveContext, formatContextForLLM } from '@/lib/ai/retriever';
 import { prisma } from '@/lib/prisma';
+import { checkRateLimit, getClientIp } from '@/lib/cache/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export const POST = createMethodHandler({
     POST: withAuth(async (request) => {
+        // 限流：每 IP 每分钟 10 次
+        const ip = getClientIp(request);
+        const rateLimit = await checkRateLimit(`ai:chat:${ip}`, 10, 60);
+        if (!rateLimit.allowed) {
+            return Response.json(
+                { success: false, error: '请求过于频繁，请稍后再试' },
+                {
+                    status: 429,
+                    headers: {
+                        'Retry-After': String(rateLimit.resetSeconds),
+                        'X-RateLimit-Limit': String(rateLimit.limit),
+                        'X-RateLimit-Remaining': '0',
+                    },
+                },
+            );
+        }
+
         const { messages, context } = await request.json();
 
         if (!messages || !Array.isArray(messages)) {

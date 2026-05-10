@@ -22,12 +22,11 @@ export default auth((req) => {
     response.headers.set('X-Content-Type-Options', 'nosniff');
     response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-    // 静态资源和 API 跳过
+    // 静态资源和 API 跳过（matcher 已排除带扩展名的文件）
     if (
         pathname.startsWith('/_next') ||
         pathname.startsWith('/api') ||
-        pathname.startsWith('/favicon') ||
-        pathname.includes('.')
+        pathname.startsWith('/favicon')
     ) {
         return response;
     }

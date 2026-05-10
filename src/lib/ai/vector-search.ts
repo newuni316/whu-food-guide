@@ -46,30 +46,41 @@ export async function semanticSearch(
         // pgvector 余弦距离查询
         // 1 - cosine_distance = cosine_similarity
         // 距离越小越相似
-        const results = await prisma.$queryRaw<
+        const conditions: string[] = [
+            'd."deletedAt" IS NULL',
+            'd."isAvailable" = true',
+        ];
+        const params: unknown[] = [];
+        let paramIndex = 1;
+
+        if (filters?.campus) {
+            conditions.push(`cp.code = $${paramIndex++}`);
+            params.push(filters.campus);
+        }
+        if (filters?.priceMax) {
+            conditions.push(`d.price <= $${paramIndex++}`);
+            params.push(filters.priceMax);
+        }
+
+        const vectorParam = paramIndex++;
+        const limitParam = paramIndex++;
+
+        const results = await prisma.$queryRawUnsafe<
             { dish_id: string; similarity: number }[]
-        >`
-            SELECT
+        >(
+            `SELECT
                 de."dishId" as dish_id,
-                1 - (de.embedding <=> ${vectorStr}::vector) as similarity
+                1 - (de.embedding <=> $${vectorParam}::vector) as similarity
             FROM "DishEmbedding" de
             JOIN "Dish" d ON d.id = de."dishId"
             JOIN "Window" w ON w.id = d."windowId"
             JOIN "Canteen" c ON c.id = w."canteenId"
             JOIN "Campus" cp ON cp.id = c."campusId"
-            WHERE d."deletedAt" IS NULL
-              AND d."isAvailable" = true
-              ${filters?.campus
-                ? prisma.$queryRaw`AND cp.code = ${filters.campus}`
-                : prisma.$queryRaw``
-              }
-              ${filters?.priceMax
-                ? prisma.$queryRaw`AND d.price <= ${filters.priceMax}`
-                : prisma.$queryRaw``
-              }
-            ORDER BY de.embedding <=> ${vectorStr}::vector
-            LIMIT ${topK}
-        `;
+            WHERE ${conditions.join(' AND ')}
+            ORDER BY de.embedding <=> $${vectorParam}::vector
+            LIMIT $${limitParam}`,
+            ...params, vectorStr, topK,
+        );
 
         timer.end({ resultCount: results.length });
 

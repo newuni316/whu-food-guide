@@ -35,86 +35,80 @@ export async function getRecommendation(
 ): Promise<RecommendResponse> {
     const timer = createTimer('recommendation');
 
-    // 缓存键
+    // 缓存键（不包含 userId，相同查询共享缓存）
     const queryHash = createHash('md5')
         .update(JSON.stringify(request))
         .digest('hex')
         .slice(0, 12);
 
-    // 尝试从缓存获取
-    const cached = await withCache(
+    // 核心推荐逻辑封装到 withCache fetcher 中
+    const response = await withCache(
         CacheKeys.recommend.query(queryHash),
         CacheTTL.RECOMMEND,
-        async () => null,
+        async () => {
+            // 1. RAG 检索
+            const context = await retrieveContext(request);
+
+            // 2. 用户画像加权（仅用于排序，不进入缓存键）
+            let userDietTags: string[] = [];
+            if (userId) {
+                const user = await prisma.user.findUnique({
+                    where: { id: userId },
+                    select: { dietTags: true },
+                });
+                userDietTags = user?.dietTags || [];
+            }
+
+            // 3. 综合排序
+            const rankedDishes = rankDishes(context.dishes, {
+                budget: request.budget ?? context.filters.budget,
+                diet: request.diet ?? context.filters.diet,
+                userDietTags,
+            });
+
+            // 4. 构建推荐结果
+            const results: RecommendResult[] = rankedDishes.slice(0, 5).map(dish => ({
+                dish: dish as DishSummary,
+                score: dish._score,
+                reason: generateQuickReason(dish, request),
+                matchTags: findMatchingTags(dish, request),
+            }));
+
+            // 5. LLM 生成推荐总结
+            let aiResponse = '';
+            try {
+                const llm = getLLMClient();
+                const contextText = formatContextForLLM(context);
+                const prompt = RECOMMEND_FORMAT_PROMPT
+                    .replace('{query}', request.query)
+                    .replace('{preferences}', [
+                        request.budget ? `预算${request.budget}元` : '',
+                        request.diet?.join('、') || '',
+                        request.location || '',
+                    ].filter(Boolean).join('，') || '无特殊偏好')
+                    .replace('{retrieved_dishes}', contextText);
+
+                aiResponse = await llm.chat([
+                    { role: 'system', content: '你是武大美食推荐助手，请根据检索到的信息生成推荐回复。' },
+                    { role: 'user', content: prompt },
+                ]);
+            } catch (error) {
+                logger.error('LLM recommendation generation failed', 'recommender', {
+                    error: (error as Error).message,
+                });
+                aiResponse = generateFallbackResponse(results, request);
+            }
+
+            return {
+                results,
+                aiResponse,
+                query: request.query,
+                context: request,
+            };
+        },
     );
 
-    if (cached) {
-        timer.end({ cache: true });
-        return cached as RecommendResponse;
-    }
-
-    // 1. RAG 检索
-    const context = await retrieveContext(request);
-
-    // 2. 用户画像加权
-    let userDietTags: string[] = [];
-    if (userId) {
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { dietTags: true },
-        });
-        userDietTags = user?.dietTags || [];
-    }
-
-    // 3. 综合排序
-    const rankedDishes = rankDishes(context.dishes, {
-        budget: request.budget ?? context.filters.budget,
-        diet: request.diet ?? context.filters.diet,
-        userDietTags,
-    });
-
-    // 4. 构建推荐结果
-    const results: RecommendResult[] = rankedDishes.slice(0, 5).map(dish => ({
-        dish: dish as DishSummary,
-        score: dish._score,
-        reason: generateQuickReason(dish, request),
-        matchTags: findMatchingTags(dish, request),
-    }));
-
-    // 5. LLM 生成推荐总结
-    let aiResponse = '';
-    try {
-        const llm = getLLMClient();
-        const contextText = formatContextForLLM(context);
-        const prompt = RECOMMEND_FORMAT_PROMPT
-            .replace('{query}', request.query)
-            .replace('{preferences}', [
-                request.budget ? `预算${request.budget}元` : '',
-                request.diet?.join('、') || '',
-                request.location || '',
-            ].filter(Boolean).join('，') || '无特殊偏好')
-            .replace('{retrieved_dishes}', contextText);
-
-        aiResponse = await llm.chat([
-            { role: 'system', content: '你是武大美食推荐助手，请根据检索到的信息生成推荐回复。' },
-            { role: 'user', content: prompt },
-        ]);
-    } catch (error) {
-        logger.error('LLM recommendation generation failed', 'recommender', {
-            error: (error as Error).message,
-        });
-        // 降级：使用模板生成
-        aiResponse = generateFallbackResponse(results, request);
-    }
-
-    const response: RecommendResponse = {
-        results,
-        aiResponse,
-        query: request.query,
-        context: request,
-    };
-
-    // 记录推荐日志
+    // 记录推荐日志（缓存之外，避免影响缓存内容）
     if (userId) {
         await prisma.recommendationLog.create({
             data: {
@@ -125,7 +119,7 @@ export async function getRecommendation(
                     diet: request.diet,
                     location: request.location,
                 },
-                results: results.map(r => ({
+                results: response.results.map(r => ({
                     dishId: r.dish.id,
                     dishName: r.dish.name,
                     score: r.score,
@@ -134,7 +128,7 @@ export async function getRecommendation(
         });
     }
 
-    timer.end({ resultCount: results.length });
+    timer.end({ resultCount: response.results.length });
     return response;
 }
 
@@ -161,11 +155,11 @@ function rankDishes(
     },
 ): ScoredDish[] {
     return dishes
-        .map(dish => {
+        .map((dish, index) => {
             let score = 0;
 
-            // 语义相关度（已由向量搜索排序，给一个基础分）
-            score += 0.4 * (1 - dishes.indexOf(dish) / Math.max(dishes.length, 1));
+            // 语义相关度（使用 index 参数避免 indexOf 引用比较问题）
+            score += 0.4 * (1 - index / Math.max(dishes.length, 1));
 
             // 评分
             score += 0.25 * (dish.avgRating / 5);
