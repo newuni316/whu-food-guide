@@ -48,7 +48,7 @@ export default function RegisterPage() {
           </div>
           <h1 className="text-2xl font-bold">创建账号</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            加入珞珈美食指南社区
+            加入武大美食指北社区
           </p>
         </div>
 

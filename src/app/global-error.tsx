@@ -10,12 +10,7 @@ export default function GlobalError({
     reset: () => void;
 }) {
     useEffect(() => {
-        try {
-            const Sentry = require('@sentry/nextjs');
-            Sentry.captureException(error);
-        } catch {
-            // @sentry/nextjs not installed
-        }
+        console.error('Global error:', error);
     }, [error]);
 
     return (

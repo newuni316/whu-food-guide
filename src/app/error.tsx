@@ -11,13 +11,6 @@ export default function RootError({
 }) {
     useEffect(() => {
         console.error('Page error:', error);
-        // Report to Sentry if available
-        try {
-            const Sentry = require('@sentry/nextjs');
-            Sentry.captureException(error);
-        } catch {
-            // @sentry/nextjs not installed
-        }
     }, [error]);
 
     return (

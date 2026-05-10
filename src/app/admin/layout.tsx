@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { LayoutDashboard, UtensilsCrossed, MessageSquare, Users, ArrowLeft } from 'lucide-react';
 
 export const metadata = {
-    title: '管理后台 — 珞珈美食指南',
+    title: '管理后台 — 武大美食指北',
 };
 
 const NAV_ITEMS = [

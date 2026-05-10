@@ -47,7 +47,7 @@ export default function LoginPage() {
           </div>
           <h1 className="text-2xl font-bold">欢迎回来</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            登录珞珈美食指南
+            登录武大美食指北
           </p>
         </div>
 

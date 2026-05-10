@@ -43,7 +43,7 @@ export function Navigation() {
             <UtensilsCrossed className="h-4 w-4 text-primary-foreground" />
           </div>
           <span className="text-lg font-semibold tracking-tight">
-            珞珈美食
+            武大美食
           </span>
         </Link>
 
