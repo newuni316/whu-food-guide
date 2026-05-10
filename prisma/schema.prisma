@@ -1,31 +1,17 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
 }
 
-enum Campus {
-  wenli
-  gongxue
-  xinxixue
-  yixue
-  surroundings
-}
-
-enum Area {
-  meiyuan
-  guiyuan
-  fengyuan
-  yingyuan
-  gongxue
-  xinxixue
-  yixue
-  guangbalu
-  jiedaokou
-}
+// ──────────────────────────────────────────────
+// Enums
+// ──────────────────────────────────────────────
 
 enum UserRole {
   user
@@ -33,30 +19,38 @@ enum UserRole {
   superadmin
 }
 
+// ──────────────────────────────────────────────
+// Auth Models (NextAuth v5)
+// ──────────────────────────────────────────────
+
 model User {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String?
-  email         String?  @unique
+  email         String?   @unique
   emailVerified DateTime?
   image         String?
   passwordHash  String?
-  role          UserRole @default(user)
-  level         Int      @default(1)
-  experience    Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  role          UserRole  @default(user)
+  level         Int       @default(1)
+  experience    Int       @default(0)
+  dietTags      String[]  // 用户画像: [减脂党, 健身党, 熬夜党, 省钱党]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
 
   accounts      Account[]
   sessions      Session[]
   profile       Profile?
   reviews       Review[]
-  comments      Comment[]
   favorites     Favorite[]
   browsingHistories BrowsingHistory[]
   aiChats       AiChat[]
   notifications Notification[]
   achievements  UserAchievement[]
+  recommendationLogs RecommendationLog[]
+
+  @@index([role])
+  @@index([createdAt])
 }
 
 model Account {
@@ -94,173 +88,249 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// ──────────────────────────────────────────────
+// User Profile
+// ──────────────────────────────────────────────
+
 model Profile {
-  id        String  @id @default(cuid())
-  userId    String  @unique
+  id        String   @id @default(cuid())
+  userId    String   @unique
   bio       String?
   avatarUrl String?
   phone     String?
   grade     String?
   major     String?
-  preferences Json? @default("{}")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  studentId String?  // 学号
+  campus    String?  // 常驻校区
+  preferences Json?  @default("{}")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model Cafeteria {
-  id           String   @id @default(cuid())
-  name         String
-  slug         String   @unique
-  campus       Campus
-  area         Area
-  address      String?
-  hours        String?
-  phone        String?
-  coordinates  Json
-  images       String[]
-  tags         String[]
-  source       String?
-  contributor  String?
-  lastVerified DateTime?
-  review       String?
-  rating       Json?
-  recommendations String[] @default([])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  deletedAt    DateTime?
+// ──────────────────────────────────────────────
+// Campus — 校区（替代硬编码枚举）
+// ──────────────────────────────────────────────
 
-  stalls   Stall[]
-  rankings Ranking[]
+model Campus {
+  id       String  @id @default(cuid())
+  name     String  @unique // "文理学部"
+  code     String  @unique // "wenli"
+  order    Int     @default(0)
+  canteens Canteen[]
+
+  @@index([order])
 }
 
-model Stall {
+// ──────────────────────────────────────────────
+// Canteen — 食堂
+// ──────────────────────────────────────────────
+
+model Canteen {
   id          String   @id @default(cuid())
   name        String
-  cafeteriaId String
-  category    String[]
-  priceRange  Int[]
-  description String?
+  slug        String   @unique
+  campusId    String
+  campus      Campus   @relation(fields: [campusId], references: [id])
+  address     String
+  latitude    Float
+  longitude   Float
+  phone       String?
+  hours       Json     // { mon: { open: "07:00", close: "21:00" }, ... }
+  isOpen      Boolean  @default(true)
+  queueIndex  Int      @default(0)  // 0-100 排队指数
   images      String[]
   tags        String[]
+  avgRating   Float    @default(0)
+  reviewCount Int      @default(0)
+  description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
 
-  cafeteria Cafeteria @relation(fields: [cafeteriaId], references: [id], onDelete: Cascade)
-  dishes    Dish[]
+  windows     Window[]
+  reviews     Review[]
+  rankings    Ranking[]
+
+  @@index([campusId])
+  @@index([slug])
+  @@index([avgRating(sort: Desc)])
+  @@index([deletedAt])
 }
 
-model Dish {
+// ──────────────────────────────────────────────
+// Window — 窗口/摊位（替代 Stall）
+// ──────────────────────────────────────────────
+
+model Window {
   id          String   @id @default(cuid())
   name        String
-  stallId     String
-  price       Float?
-  images      String[]
+  canteenId   String
+  canteen     Canteen  @relation(fields: [canteenId], references: [id], onDelete: Cascade)
   description String?
-  category    String?
-  calories    Int?
+  category    String[] // [快餐, 面食, 烧烤]
+  priceMin    Float
+  priceMax    Float
   tags        String[]
-  rating      Float?
+  isOpen      Boolean  @default(true)
+  queueIndex  Int      @default(0)  // 0-100
+  avgRating   Float    @default(0)
   reviewCount Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
 
-  stall      Stall              @relation(fields: [stallId], references: [id], onDelete: Cascade)
-  reviews    Review[]
-  favorites  Favorite[]
-  embeddings DishEmbedding?
-  dishImages DishImage[]
-  browsingHistories BrowsingHistory[]
+  dishes      Dish[]
+
+  @@index([canteenId])
+  @@index([deletedAt])
+  @@index([avgRating(sort: Desc)])
 }
 
-model DishImage {
+// ──────────────────────────────────────────────
+// Dish — 菜品
+// ──────────────────────────────────────────────
+
+model Dish {
+  id          String   @id @default(cuid())
+  name        String
+  windowId    String
+  window      Window   @relation(fields: [windowId], references: [id], onDelete: Cascade)
+  price       Float
+  description String?
+  category    String   // 主食/小吃/饮品/汤品/凉菜/...
+  calories    Int?     // 卡路里 (kcal)
+  protein     Float?   // 蛋白质 (g)
+  fat         Float?   // 脂肪 (g)
+  carbs       Float?   // 碳水化合物 (g)
+  tags        String[] // [减脂, 高蛋白, 素食, 辣, 推荐]
+  images      String[]
+  avgRating   Float    @default(0)
+  reviewCount Int      @default(0)
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  embedding    DishEmbedding?
+  reviews      Review[]
+  favorites    Favorite[]
+  priceHistory PriceHistory[]
+  browsingHistories BrowsingHistory[]
+
+  @@index([windowId])
+  @@index([category])
+  @@index([price])
+  @@index([avgRating(sort: Desc)])
+  @@index([isAvailable])
+  @@index([deletedAt])
+  @@index([tags])
+}
+
+// ──────────────────────────────────────────────
+// DishEmbedding — 菜品向量嵌入 (pgvector)
+// ──────────────────────────────────────────────
+
+model DishEmbedding {
+  id        String   @id @default(cuid())
+  dishId    String   @unique
+  dish      Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  embedding Unsupported("vector(1536)") // text-embedding-3-small
+  content   String   // 用于 RAG 的文本摘要
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ──────────────────────────────────────────────
+// PriceHistory — 价格历史
+// ──────────────────────────────────────────────
+
+model PriceHistory {
   id        String   @id @default(cuid())
   dishId    String
-  url       String
-  alt       String?
-  width     Int?
-  height    Int?
+  dish      Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  price     Float
   createdAt DateTime @default(now())
 
-  dish Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  @@index([dishId, createdAt(sort: Desc)])
 }
+
+// ──────────────────────────────────────────────
+// Review — 评价（含情感分析，支持嵌套回复）
+// ──────────────────────────────────────────────
 
 model Review {
   id        String   @id @default(cuid())
   content   String
-  rating    Int
+  rating    Int      @db.SmallInt // 1-5
   images    String[]
+  sentiment Float?   // -1.0 到 1.0 情感分数
+  keywords  String[] // 自动提取的关键词
   likes     Int      @default(0)
   userId    String
   dishId    String
-  parentId  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
-
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  dish     Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
-  parent   Review?  @relation("ReviewReplies", fields: [parentId], references: [id])
-  replies  Review[] @relation("ReviewReplies")
-  comments Comment[]
-
-  @@index([dishId])
-  @@index([userId])
-}
-
-model Comment {
-  id        String   @id @default(cuid())
-  content   String
-  likes     Int      @default(0)
-  userId    String
-  reviewId  String
+  canteenId String?
   parentId  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  review  Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-  parent  Comment? @relation("CommentReplies", fields: [parentId], references: [id])
-  replies Comment[] @relation("CommentReplies")
+  dish    Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  canteen Canteen? @relation(fields: [canteenId], references: [id])
+  parent  Review?  @relation("ReviewReplies", fields: [parentId], references: [id])
+  replies Review[] @relation("ReviewReplies")
 
-  @@index([reviewId])
+  @@index([dishId])
+  @@index([userId])
+  @@index([canteenId])
+  @@index([createdAt(sort: Desc)])
+  @@index([rating])
+  @@index([deletedAt])
 }
+
+// ──────────────────────────────────────────────
+// Favorite — 收藏
+// ──────────────────────────────────────────────
 
 model Favorite {
   id        String   @id @default(cuid())
   userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   dishId    String
+  dish      Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  dish Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
 
   @@unique([userId, dishId])
   @@index([userId])
   @@index([dishId])
 }
 
-model Ranking {
-  id       String @id @default(cuid())
-  type     String
-  label    String
-  score    Float
-  rank     Int
-  cafeteriaId String
-  period   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ──────────────────────────────────────────────
+// Ranking — 排行榜（支持多维度 + 时间段）
+// ──────────────────────────────────────────────
 
-  cafeteria Cafeteria @relation(fields: [cafeteriaId], references: [id], onDelete: Cascade)
+model Ranking {
+  id          String   @id @default(cuid())
+  type        String   // daily/weekly/night/value/fitness/dark
+  label       String
+  score       Float
+  rank        Int
+  canteenId   String
+  canteen     Canteen  @relation(fields: [canteenId], references: [id], onDelete: Cascade)
+  period      String   // "2026-05-10"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([type, period])
-  @@index([score])
+  @@index([score(sort: Desc)])
+  @@index([canteenId])
 }
+
+// ──────────────────────────────────────────────
+// BrowsingHistory — 浏览历史
+// ──────────────────────────────────────────────
 
 model BrowsingHistory {
   id        String   @id @default(cuid())
@@ -275,33 +345,54 @@ model BrowsingHistory {
 
   @@unique([userId, dishId])
   @@index([userId])
+  @@index([createdAt(sort: Desc)])
 }
+
+// ──────────────────────────────────────────────
+// AiChat — AI 对话记录
+// ──────────────────────────────────────────────
 
 model AiChat {
   id        String   @id @default(cuid())
   userId    String
   title     String?
-  messages  Json
+  messages  Json     // ChatMessage[]
+  context   Json?    // 对话上下文 { budget, diet, location }
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
 }
 
-model DishEmbedding {
-  id        String @id @default(cuid())
-  dishId    String @unique
-  embedding String
+// ──────────────────────────────────────────────
+// RecommendationLog — 推荐日志（用于优化算法）
+// ──────────────────────────────────────────────
 
-  dish Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
+model RecommendationLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  query      String   // 用户输入
+  context    Json?    // { budget, diet, location, time }
+  results    Json     // 推荐结果摘要
+  clickedId  String?  // 用户最终点击的菜品ID
+  feedback   Int?     // 用户反馈: 1=有用, -1=没用
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
 }
+
+// ──────────────────────────────────────────────
+// Notification — 通知
+// ──────────────────────────────────────────────
 
 model Notification {
   id        String   @id @default(cuid())
   userId    String
-  type      String
+  type      String   // review_reply/achievement/system
   title     String
   content   String?
   read      Boolean  @default(false)
@@ -311,20 +402,30 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, read])
+  @@index([createdAt(sort: Desc)])
 }
+
+// ──────────────────────────────────────────────
+// UserAchievement — 成就系统
+// ──────────────────────────────────────────────
 
 model UserAchievement {
   id          String   @id @default(cuid())
   userId      String
-  type        String
+  type        String   @unique // first_review/ten_reviews/food_explorer/...
   title       String
   description String?
+  icon        String?
   createdAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, type])
 }
+
+// ──────────────────────────────────────────────
+// AdminLog — 管理员操作日志
+// ──────────────────────────────────────────────
 
 model AdminLog {
   id        String   @id @default(cuid())
@@ -336,5 +437,5 @@ model AdminLog {
   createdAt DateTime @default(now())
 
   @@index([adminId])
-  @@index([createdAt])
+  @@index([createdAt(sort: Desc)])
 }

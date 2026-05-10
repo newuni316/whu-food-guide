@@ -1,0 +1,454 @@
+openapi: "3.0.3"
+info:
+  title: WHU Food Guide API
+  description: 武汉大学智慧校园美食平台 API
+  version: "2.0.0"
+servers:
+  - url: http://localhost:3000
+    description: 开发环境
+
+paths:
+  /api/cafeterias:
+    get:
+      summary: 获取食堂列表
+      tags: [食堂]
+      parameters:
+        - name: campus
+          in: query
+          schema:
+            type: string
+          description: 校区筛选 (wenli/gongxue/xinxixue/yixue/surroundings)
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CanteenListResponse"
+
+  /api/rankings:
+    get:
+      summary: 获取排行榜
+      tags: [排行榜]
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [daily, weekly, night, value, fitness, dark]
+        - name: period
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RankingListResponse"
+
+  /api/search:
+    get:
+      summary: 语义搜索 + 结构化筛选
+      tags: [搜索]
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: 搜索关键词（支持自然语言）
+        - name: campus
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: priceMin
+          in: query
+          schema:
+            type: number
+        - name: priceMax
+          in: query
+          schema:
+            type: number
+        - name: tags
+          in: query
+          schema:
+            type: string
+          description: 逗号分隔的标签
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [rating, price, hot, new]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResponse"
+
+  /api/reviews:
+    get:
+      summary: 获取评价列表
+      tags: [评价]
+      parameters:
+        - name: dishId
+          in: query
+          schema:
+            type: string
+        - name: canteenId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 成功
+    post:
+      summary: 发表评价
+      tags: [评价]
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dishId, content, rating]
+              properties:
+                dishId:
+                  type: string
+                content:
+                  type: string
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+      responses:
+        "200":
+          description: 评价创建成功
+        "401":
+          description: 未登录
+
+  /api/ai/chat:
+    post:
+      summary: AI 对话
+      tags: [AI]
+      description: RAG 对话，自动检索相关食堂/菜品信息
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [messages]
+              properties:
+                messages:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ChatMessage"
+                context:
+                  type: object
+                  properties:
+                    budget:
+                      type: number
+                    diet:
+                      type: array
+                      items:
+                        type: string
+                    location:
+                      type: string
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      content:
+                        type: string
+
+  /api/ai/recommend:
+    post:
+      summary: 智能推荐
+      tags: [AI]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecommendRequest"
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendResponse"
+
+  /api/auth/register:
+    post:
+      summary: 用户注册
+      tags: [认证]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 6
+      responses:
+        "200":
+          description: 注册成功
+        "400":
+          description: 参数错误
+
+  /api/user/profile:
+    get:
+      summary: 获取个人资料
+      tags: [用户]
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: 成功
+    put:
+      summary: 更新个人资料
+      tags: [用户]
+      security:
+        - sessionAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                bio:
+                  type: string
+                major:
+                  type: string
+                grade:
+                  type: string
+      responses:
+        "200":
+          description: 更新成功
+
+  /api/user/favorites:
+    get:
+      summary: 获取收藏列表
+      tags: [用户]
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: 成功
+    post:
+      summary: 添加收藏
+      tags: [用户]
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dishId]
+              properties:
+                dishId:
+                  type: string
+      responses:
+        "200":
+          description: 收藏成功
+    delete:
+      summary: 取消收藏
+      tags: [用户]
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: dishId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 取消成功
+
+components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: next-auth.session-token
+      description: NextAuth 会话 cookie
+
+  schemas:
+    ChatMessage:
+      type: object
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          enum: [system, user, assistant]
+        content:
+          type: string
+
+    RecommendRequest:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+        budget:
+          type: number
+        diet:
+          type: array
+          items:
+            type: string
+        location:
+          type: string
+        time:
+          type: string
+
+    RecommendResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            results:
+              type: array
+              items:
+                type: object
+                properties:
+                  dish:
+                    type: object
+                  score:
+                    type: number
+                  reason:
+                    type: string
+                  matchTags:
+                    type: array
+                    items:
+                      type: string
+            aiResponse:
+              type: string
+
+    CanteenListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              slug:
+                type: string
+              address:
+                type: string
+              avgRating:
+                type: number
+              campus:
+                type: object
+
+    RankingListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              rank:
+                type: integer
+              score:
+                type: number
+              canteen:
+                type: object
+
+    SearchResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              type:
+                type: string
+              price:
+                type: number
+              rating:
+                type: number
+              tags:
+                type: array
+                items:
+                  type: string
+              score:
+                type: number
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            pageSize:
+              type: integer
+            total:
+              type: integer
+            totalPages:
+              type: integer

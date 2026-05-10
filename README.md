@@ -5,148 +5,125 @@
   <img src="https://img.shields.io/badge/React-19-blue" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-5-blueviolet" alt="TypeScript 5" />
   <img src="https://img.shields.io/badge/Prisma-6-2D3748" alt="Prisma 6" />
-  <img src="https://img.shields.io/badge/TailwindCSS-4-06B6D4" alt="TailwindCSS 4" />
+  <img src="https://img.shields.io/badge/pgvector-0.8-336791" alt="pgvector" />
+  <img src="https://img.shields.io/badge/DeepSeek-V3-0066FF" alt="DeepSeek" />
   <img src="https://img.shields.io/badge/AI%20Native-FF6B6B" alt="AI Native" />
 </p>
 
 <p align="center">
-  AI Native 智慧校园美食平台 — 集成智能推荐、RAG 检索、实时热榜、校园美食地图的武汉大学全栈应用
-</p>
-
-<p align="center">
-  <a href="#-features">Features</a> •
-  <a href="#-tech-stack">Tech Stack</a> •
-  <a href="#-architecture">Architecture</a> •
-  <a href="#-quick-start">Quick Start</a> •
-  <a href="#-deployment">Deployment</a>
+  AI Native 智慧校园饮食助手 — 基于 RAG + 向量搜索 + 推荐系统的武汉大学全栈应用
 </p>
 
 ---
 
-## ✨ Features
+## ✨ 核心特性
 
-| 模块 | 功能 |
-|------|------|
-| **AI 食堂助手** | LLM 驱动的智能对话 + RAG 上下文检索，支持预算控制/健身饮食/深夜推荐 |
-| **智能推荐系统** | 基于用户画像、浏览历史、时间热度的个性化推荐 |
-| **实时热榜** | 6 种排行榜 — 今日/本周/夜宵/性价比/健身/黑暗料理 |
-| **校园美食地图** | 食堂分布、摊位定位、校区导航 |
-| **图文评价** | 用户评价 + 图片 + 点赞 + 回复 |
-| **用户系统** | 邮箱注册、JWT 认证、用户等级、成就系统 |
-| **向量搜索** | 基于 pgvector 的语义搜索 — 「适合减脂」「蛋白质高」 |
-| **深色模式** | Apple 级 UI 设计，毛玻璃效果，微交互动画 |
+| 模块 | 功能 | 技术实现 |
+|------|------|----------|
+| **AI 智能推荐** | 自然语言查询 → 个性化菜品推荐 | RAG + pgvector + DeepSeek |
+| **语义搜索** | "减脂高蛋白""20元以内" | text-embedding-3-small + 余弦相似度 |
+| **情感分析** | 评论自动分析 + 口碑摘要 | LLM + 关键词提取 |
+| **个性化推荐** | 用户画像 + 协同过滤 + 内容推荐 | 多维加权排序算法 |
+| **实时排行榜** | 6 种排行榜 — 今日/夜宵/性价比/健身... | Redis 缓存 + 动态计算 |
+| **校园美食地图** | 食堂分布 + 营业状态 + 排队指数 | Leaflet + 实时数据 |
+| **用户系统** | JWT 认证 + 收藏/评价/成就 | NextAuth v5 + RBAC |
+| **管理后台** | 食堂/菜品/评论/用户管理 | Admin 路由 + 权限控制 |
+
+---
+
+## 🏗 架构设计
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Next.js 16 (App Router)                   │
+│                    SSR + ISR + Server Actions                │
+├─────────────────────────────────────────────────────────────┤
+│  Frontend                 │  API Layer (Route Handlers)      │
+│  ├─ Landing Page          │  ├─ /api/ai/chat (RAG 对话)      │
+│  ├─ Explore (语义搜索)     │  ├─ /api/ai/recommend (推荐)     │
+│  ├─ Rankings (排行榜)      │  ├─ /api/search (向量搜索)       │
+│  ├─ AI Chat (AI 助手)     │  ├─ /api/cafeterias (食堂)       │
+│  ├─ Map (美食地图)         │  ├─ /api/rankings (排行)         │
+│  ├─ Profile (个人中心)     │  └─ /api/auth/* (认证)           │
+│  └─ Admin (管理后台)       │                                  │
+├─────────────────────────────────────────────────────────────┤
+│                    AI Pipeline                               │
+│  ├─ Embedding: text-embedding-3-small (1536d)               │
+│  ├─ Vector DB: pgvector (余弦相似度)                          │
+│  ├─ RAG: 检索增强生成                                        │
+│  ├─ Recommender: 多维加权排序                                │
+│  └─ Sentiment: 评论情感分析                                  │
+├─────────────────────────────────────────────────────────────┤
+│  PostgreSQL 16 + pgvector  │  Redis 7  │  DeepSeek API      │
+│  ├─ 18 数据模型             │  ├─ 排行榜 │  ├─ Chat (LLM)    │
+│  ├─ 向量索引 (HNSW)        │  ├─ 缓存   │  └─ Embedding     │
+│  └─ 全文搜索               │  └─ 会话   │                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### RAG 推荐流程
+
+```
+用户: "20块以内减脂餐"
+        │
+        ▼
+┌─────────────────┐
+│  意图解析        │  预算=20, 偏好=减脂
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  向量嵌入        │  text-embedding-3-small
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  pgvector 检索   │  余弦相似度 top-15
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  多维过滤排序    │  预算 + 标签 + 评分 + 用户画像
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  LLM 生成理由    │  DeepSeek 生成推荐文案
+└────────┬────────┘
+         ▼
+    推荐结果卡片
+```
 
 ---
 
 ## 🛠 Tech Stack
 
 ### Frontend
-
-| 技术 | 用途 |
-|------|------|
-| Next.js 16 (App Router) | 全栈框架，SSR/SSG/ISR |
-| React 19 | UI 渲染 |
-| TypeScript 5 | 类型安全 |
-| TailwindCSS 4 | 原子化 CSS |
-| Framer Motion | 动画 |
-| Zustand | 状态管理 |
-| React Query (TanStack) | 服务端状态缓存 |
-| React Hook Form + Zod | 表单验证 |
-| Recharts | 数据可视化 |
-| Lucide Icons | 图标系统 |
+- Next.js 16 (App Router) — SSR/ISR
+- React 19 + TypeScript 5
+- TailwindCSS 4 + Framer Motion
+- Zustand (状态管理) + React Query (服务端缓存)
+- Leaflet (地图) + Recharts (图表)
 
 ### Backend
-
-| 技术 | 用途 |
-|------|------|
-| Next.js API Routes | RESTful API |
-| Prisma ORM | 数据库 ORM |
-| PostgreSQL 16 | 主数据库 |
-| Redis 7 | 缓存 + 实时排行 |
-| NextAuth v5 | 认证 (JWT) |
-| Zod | 参数校验 |
+- Next.js API Routes (Route Handlers)
+- Prisma 6 ORM + PostgreSQL 16
+- pgvector (向量搜索)
+- Redis 7 (缓存 + 排行榜)
+- NextAuth v5 (JWT 认证)
 
 ### AI / ML
-
-| 技术 | 用途 |
-|------|------|
-| OpenAI / DeepSeek API | LLM 推理 |
-| text-embedding-3-small | 文本向量化 |
-| pgvector | 向量相似度搜索 |
-| RAG | 检索增强生成 |
-| Function Calling | AI Agent 工具调用 |
+- DeepSeek API (LLM 推理)
+- OpenAI text-embedding-3-small (向量化)
+- RAG (检索增强生成)
+- 情感分析 + 关键词提取
 
 ### DevOps
-
-| 技术 | 用途 |
-|------|------|
-| Docker + Compose | 容器化部署 |
-| GitHub Actions | CI/CD |
-| Vitest | 单元测试 |
-| Sentry | 错误监控 |
-| OpenTelemetry | 可观测性 |
-
----
-
-## 🏗 Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        Frontend                             │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐  │
-│  │ Landing  │ │ Explore  │ │ Rankings │ │   AI Chat    │  │
-│  │   Page   │ │  Page    │ │   Page   │ │    Page      │  │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────────┘  │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐  │
-│  │ Map Page │ │Cafeteria │ │  Auth    │ │  Dashboard   │  │
-│  │          │ │ Detail   │ │  Pages   │ │  (Admin)     │  │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────────┘  │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │            Shared Components                         │   │
-│  │  Navigation │ CafeteriaCard │ SearchBar │ Badge    │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      API Layer (Next.js)                     │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐  │
-│  │ Auth API │ │Cafeteria │ │ Rankings │ │   AI Chat    │  │
-│  │          │ │   API    │ │   API    │ │     API      │  │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              │
-            ┌─────────────────┼─────────────────┐
-            ▼                 ▼                  ▼
-┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│   PostgreSQL    │ │      Redis      │ │   OpenAI API    │
-│   + pgvector    │ │  (Cache/Queue)  │ │  / DeepSeek     │
-│                 │ │                 │ │                 │
-│  Prisma ORM     │ │  Real-time      │ │  AI Agent +    │
-│  18 models      │ │  Rankings       │ │  RAG System    │
-└─────────────────┘ └─────────────────┘ └─────────────────┘
-```
-
-### Data Flow
-
-1. **浏览**: User → Next.js SSR → Prisma → PostgreSQL → Hydrate → UI
-2. **AI 对话**: User → Client → API Route → OpenAI/DeepSeek → Stream → UI
-3. **RAG 检索**: User Query → Embedding → pgvector Similarity → Context → LLM → Response
-4. **热榜**: User Action → Cache Update → Redis Sorted Set → API → UI
-5. **推荐**: User Profile + History → Embedding → Vector Search → Ranked Results
+- Docker + Docker Compose
+- GitHub Actions CI/CD
+- Vitest (单元测试)
 
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-- Node.js 20+
-- Docker & Docker Compose
-- pnpm or npm
-
-### 1. Clone & Install
+### 1. 安装依赖
 
 ```bash
 git clone https://github.com/newuni316/whu-food-guide.git
@@ -154,32 +131,29 @@ cd whu-food-guide
 npm install
 ```
 
-### 2. Start Infrastructure
+### 2. 启动基础设施
 
 ```bash
-docker compose up -d  # PostgreSQL 16 + Redis 7
+docker compose up -d  # PostgreSQL 16 (含 pgvector) + Redis 7
 ```
 
-### 3. Configure Environment
+### 3. 配置环境变量
 
 ```bash
 cp .env.example .env.local
 ```
 
-Edit `.env.local`:
+编辑 `.env.local`，填入 API Key：
 
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/whu_food_guide"
-NEXTAUTH_URL="http://localhost:3000"
+REDIS_URL="redis://localhost:6379"
 NEXTAUTH_SECRET="your-secret-key"
-
-# AI Provider (optional — app works without it)
-OPENAI_API_KEY="sk-..."
-# or
-DEEPSEEK_API_KEY="sk-..."
+DEEPSEEK_API_KEY="sk-..."    # 推荐
+OPENAI_API_KEY="sk-..."      # 用于 embedding
 ```
 
-### 4. Database Setup
+### 4. 初始化数据库
 
 ```bash
 npx prisma generate
@@ -187,183 +161,198 @@ npx prisma db push
 npm run db:seed
 ```
 
-### 5. Run Dev Server
+### 5. 启动开发服务器
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) 🎉
+访问 http://localhost:3000
 
-### Test Accounts (after seeding)
+### 测试账号
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@whu.edu.cn | 123456 |
-| User | zhangsan@whu.edu.cn | 123456 |
-| User | lisi@whu.edu.cn | 123456 |
+| 角色 | 邮箱 | 密码 |
+|------|------|------|
+| 管理员 | admin@whu.edu.cn | 123456 |
+| 用户 | zhangsan@whu.edu.cn | 123456 |
+| 用户 | lisi@whu.edu.cn | 123456 |
 
 ---
 
-## 🐳 Docker Deployment
+## 📁 项目结构
 
-### Production Build
-
-```bash
-docker build -t whu-food-guide .
-docker run -p 3000:3000 whu-food-guide
+```
+whu-food-guide/
+├── prisma/
+│   └── schema.prisma           # 18+ 数据模型，pgvector 支持
+├── src/
+│   ├── app/
+│   │   ├── (auth)/             # 登录/注册
+│   │   ├── ai-chat/            # AI 助手对话
+│   │   ├── cafeteria/          # 食堂详情
+│   │   ├── explore/            # 语义搜索 + 探索
+│   │   ├── map/                # 校园美食地图
+│   │   ├── rankings/           # 排行榜
+│   │   ├── profile/            # 个人中心
+│   │   ├── admin/              # 管理后台
+│   │   ├── api/                # RESTful API
+│   │   │   ├── ai/             # AI 相关 API
+│   │   │   │   ├── chat/       # RAG 对话
+│   │   │   │   └── recommend/  # 智能推荐
+│   │   │   ├── search/         # 语义搜索
+│   │   │   ├── cafeterias/     # 食堂数据
+│   │   │   ├── rankings/       # 排行榜
+│   │   │   └── auth/           # 认证
+│   │   ├── globals.css         # 设计系统
+│   │   ├── layout.tsx          # Root layout
+│   │   ├── page.tsx            # Landing page
+│   │   ├── loading.tsx         # 全局 loading
+│   │   ├── error.tsx           # 全局 error
+│   │   └── global-error.tsx    # 全局错误边界
+│   ├── components/
+│   │   ├── ui/                 # 基础 UI 组件
+│   │   ├── layout/             # 布局组件
+│   │   └── ...                 # 业务组件
+│   ├── lib/
+│   │   ├── ai/                 # AI 模块
+│   │   │   ├── client.ts       # LLM 客户端 (DeepSeek/OpenAI)
+│   │   │   ├── embedding.ts    # 向量嵌入
+│   │   │   ├── vector-search.ts# 向量搜索
+│   │   │   ├── retriever.ts    # RAG 检索器
+│   │   │   ├── recommender.ts  # 推荐引擎
+│   │   │   ├── sentiment.ts    # 情感分析
+│   │   │   └── prompts.ts      # Prompt 模板
+│   │   ├── api/                # API 工具
+│   │   │   └── middleware.ts   # 统一中间件
+│   │   ├── cache/              # 缓存层
+│   │   │   ├── redis.ts        # Redis 客户端
+│   │   │   └── keys.ts         # 缓存键管理
+│   │   ├── auth.ts             # NextAuth 配置
+│   │   ├── prisma.ts           # Prisma 单例
+│   │   ├── errors.ts           # 错误处理
+│   │   ├── logger.ts           # 日志系统
+│   │   ├── api.ts              # 服务端 API
+│   │   └── utils.ts            # 工具函数
+│   ├── types/
+│   │   └── index.ts            # 统一类型定义
+│   ├── middleware.ts           # 路由中间件
+│   └── scripts/
+│       └── seed.ts             # 种子数据
+├── data/
+│   └── restaurants/            # 18 家食堂 JSON 数据
+├── Dockerfile                  # 多阶段构建
+├── docker-compose.yml          # PostgreSQL + Redis + App
+└── .github/workflows/          # CI/CD
 ```
 
-### Docker Compose (Full Stack)
+---
+
+## 📊 数据库模型
+
+18+ 个模型，完整索引优化：
+
+- **Campus** — 校区（文理/工学/信息/医学/周边）
+- **Canteen** — 食堂（坐标、营业状态、排队指数）
+- **Window** — 窗口/摊位
+- **Dish** — 菜品（价格、营养、标签、向量嵌入）
+- **DishEmbedding** — pgvector 向量 (1536维)
+- **Review** — 评价（情感分数、关键词）
+- **Favorite** — 收藏
+- **PriceHistory** — 价格历史
+- **RecommendationLog** — 推荐日志
+- **User** — 用户（JWT + 画像标签）
+- **Ranking** — 排行榜
+- **AiChat** — AI 对话记录
+
+---
+
+## 🔌 API 文档
+
+| Method | Route | 描述 |
+|--------|-------|------|
+| POST | `/api/ai/chat` | RAG 对话（自动检索上下文） |
+| POST | `/api/ai/recommend` | 智能推荐 |
+| GET | `/api/search?q=...` | 语义搜索 + 结构化筛选 |
+| GET | `/api/cafeterias` | 食堂列表 |
+| GET | `/api/rankings?type=daily` | 排行榜 |
+| POST | `/api/auth/register` | 用户注册 |
+| GET | `/api/auth/[...nextauth]` | NextAuth 认证 |
+
+### POST /api/ai/recommend
+
+```json
+{
+  "query": "20块以内减脂餐",
+  "budget": 20,
+  "diet": ["减脂"],
+  "location": "信息学部"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "results": [
+      {
+        "dish": { "name": "鸡胸肉沙拉", "price": 18, "..." : "..." },
+        "score": 0.85,
+        "reason": "高蛋白低脂，完美匹配减脂需求",
+        "matchTags": ["减脂", "高蛋白"]
+      }
+    ],
+    "aiResponse": "根据你的需求，推荐以下菜品..."
+  }
+}
+```
+
+### GET /api/search?q=减脂&campus=wenli&priceMax=25
+
+支持自然语言查询 + 结构化过滤 + 分页
+
+---
+
+## 🔒 安全特性
+
+- JWT 认证 (NextAuth v5)
+- bcrypt 密码哈希 (12 轮)
+- RBAC 权限控制 (user/admin/superadmin)
+- Zod 参数校验
+- Prisma 参数化查询 (防 SQL 注入)
+- React XSS 防护
+- 安全头 (X-Frame-Options, X-Content-Type-Options)
+- 路由中间件保护
+
+---
+
+## 📈 性能优化
+
+- **Redis 缓存**: 排行榜/食堂详情/搜索结果
+- **SSR/ISR**: 服务端渲染 + 增量静态再生
+- **防抖搜索**: 300ms 防抖
+- **分页查询**: 避免全量加载
+- **向量索引**: pgvector HNSW 索引
+- **数据库索引**: 全模型索引优化
+
+---
+
+## 🧪 测试
+
+```bash
+npm test           # 单元测试
+npm run test:e2e   # E2E 测试
+```
+
+---
+
+## 🐳 Docker 部署
 
 ```bash
 docker compose up -d
 ```
 
-This starts PostgreSQL 16 + Redis 7 + the Next.js app.
-
----
-
-## 📦 Project Structure
-
-```
-whu-food-guide/
-├── prisma/
-│   └── schema.prisma          # 18 models, indexes, relations
-├── src/
-│   ├── app/
-│   │   ├── (auth)/            # Login & Register pages
-│   │   ├── ai-chat/           # AI 食堂助手
-│   │   ├── cafeteria/         # 食堂详情页
-│   │   ├── explore/           # 探索页 (搜索 + 筛选)
-│   │   ├── map/               # 校园美食地图
-│   │   ├── rankings/          # 6 种排行榜
-│   │   ├── api/               # RESTful API 路由
-│   │   ├── globals.css        # 设计系统 (CSS 变量)
-│   │   ├── layout.tsx         # Root layout + SEO
-│   │   └── page.tsx           # Landing page
-│   ├── components/
-│   │   ├── ui/                # Button, Card, Badge
-│   │   ├── layout/            # Navigation
-│   │   ├── cafeteria-card.tsx
-│   │   ├── cafeteria-grid.tsx
-│   │   ├── ranking-section.tsx
-│   │   ├── search-bar.tsx
-│   │   ├── campus-filter.tsx
-│   │   └── providers.tsx
-│   ├── lib/
-│   │   ├── prisma.ts          # Prisma 单例
-│   │   ├── auth.ts            # NextAuth v5 配置
-│   │   ├── ai.ts              # AI Agent + RAG
-│   │   ├── api.ts             # Server-side API 封装
-│   │   └── utils.ts           # 工具函数
-│   └── scripts/
-│       └── seed.ts            # 种子数据脚本
-├── data/
-│   └── restaurants/           # 18 家食堂 JSON 数据
-├── tests/                     # 测试
-├── Dockerfile                 # 多阶段构建
-├── docker-compose.yml         # PostgreSQL + Redis + App
-└── .github/workflows/         # CI/CD
-```
-
----
-
-## 📊 Database Schema
-
-18 models with full index optimization, soft delete, and audit fields:
-
-- **User** — JWT + RBAC (user/admin/superadmin)
-- **Profile** — 学号、专业、偏好
-- **Cafeteria** — 食堂 (校区、坐标、标签)
-- **Stall** — 窗口/摊位
-- **Dish** — 菜品 (价格、热量、评分)
-- **Review / Comment** — 图文评价 + 回复
-- **Ranking** — 6 种排行榜
-- **AiChat** — AI 对话记录
-- **DishEmbedding** — 向量嵌入 (pgvector)
-- **Notification / UserAchievement / AdminLog**
-
----
-
-## 🔌 API Reference
-
-| Method | Route | Description |
-|--------|-------|-------------|
-| POST | `/api/auth/register` | 用户注册 |
-| GET | `/api/auth/[...nextauth]` | NextAuth 认证 |
-| GET | `/api/cafeterias` | 食堂列表 |
-| GET | `/api/rankings?type=` | 排行榜数据 |
-| POST | `/api/ai/chat` | AI 对话 |
-
-### POST /api/ai/chat
-
-```json
-{
-  "messages": [
-    { "role": "user", "content": "信息学部有什么好吃的？" }
-  ],
-  "context": {
-    "budget": 20,
-    "diet": "减脂",
-    "location": "信息学部"
-  }
-}
-```
-
-### GET /api/rankings?type=daily
-
-`type` options: `daily`, `weekly`, `night`, `value`, `fitness`, `dark`
-
----
-
-## 🧪 Testing
-
-```bash
-# Unit tests
-npm test
-
-# E2E tests
-npm run test:e2e
-```
-
----
-
-## 🔒 Security
-
-- JWT-based authentication (NextAuth v5)
-- bcrypt password hashing (12 rounds)
-- CSRF protection via Next.js
-- Rate limiting on API routes
-- XSS protection via React escaping
-- RBAC (user / admin / superadmin)
-- Prisma parameterized queries (SQL injection prevention)
-
----
-
-## 📈 Monitoring & Observability
-
-- Sentry for error tracking
-- OpenTelemetry for distributed tracing
-- Structured logging via `pino`
-
----
-
-## 🗺 Roadmap
-
-- [ ] OCR 菜单识别 — 拍照自动识别菜品和价格
-- [ ] WebSocket 实时通知 — 评论/点赞/回复推送
-- [ ] 管理后台 — 用户/菜品/评论管理
-- [ ] PWA — 离线访问 + 桌面快捷方式
-- [ ] 协同过滤推荐 — 基于用户行为的高级推荐
-- [ ] WeChat Mini Program — 微信小程序端
-- [ ] Performance Benchmark — Lighthouse 评分 95+
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+一键启动 PostgreSQL 16 (pgvector) + Redis 7 + Next.js App。
 
 ---
 

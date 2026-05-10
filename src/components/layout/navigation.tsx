@@ -115,26 +115,25 @@ export function Navigation() {
       {mobileOpen && (
         <div className="border-t border-border bg-background md:hidden animate-in">
           <nav className="flex flex-col gap-1 px-4 py-3">
-            {navLinks.map((link) => {
-              const Icon = link.icon
-              const isActive = pathname === link.href
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                    isActive
-                      ? "bg-secondary text-foreground"
-                      : "text-muted-foreground hover:bg-secondary/50"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {link.label}
-                </Link>
-              )
-            })}
+            <div className="flex items-center justify-between px-3 py-2">
+              <span className="text-sm font-medium">主题</span>
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="rounded-lg p-2 text-muted-foreground hover:bg-secondary transition-colors"
+              >
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
+            </div>
+            {session?.user && (
+              <Link
+                href="/profile"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary/50 transition-colors"
+              >
+                <User className="h-4 w-4" />
+                个人中心
+              </Link>
+            )}
           </nav>
         </div>
       )}

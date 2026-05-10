@@ -1,49 +1,40 @@
-import { NextRequest, NextResponse } from "next/server"
-import bcrypt from "bcryptjs"
-import { prisma } from "@/lib/prisma"
+import { createMethodHandler, successResponse } from '@/lib/api/middleware';
+import { ValidationError, AppError, ErrorCode } from '@/lib/errors';
+import { prisma } from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
+import { z } from 'zod';
 
-export async function POST(req: NextRequest) {
-  try {
-    const { name, email, password } = await req.json()
+const registerSchema = z.object({
+    name: z.string().min(1, '请输入姓名').max(50),
+    email: z.string().email('请输入有效的邮箱'),
+    password: z.string().min(6, '密码至少6位').max(100),
+});
 
-    if (!name || !email || !password) {
-      return NextResponse.json(
-        { error: "请填写所有字段" },
-        { status: 400 }
-      )
-    }
+export const POST = createMethodHandler({
+    POST: async (request) => {
+        const body = await request.json();
+        const parsed = registerSchema.safeParse(body);
 
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: "密码至少6位" },
-        { status: 400 }
-      )
-    }
+        if (!parsed.success) {
+            throw new ValidationError(
+                parsed.error.issues[0]?.message || '参数校验失败',
+                { issues: parsed.error.issues },
+            );
+        }
 
-    const existing = await prisma.user.findUnique({ where: { email } })
-    if (existing) {
-      return NextResponse.json(
-        { error: "该邮箱已被注册" },
-        { status: 409 }
-      )
-    }
+        const { name, email, password } = parsed.data;
 
-    const passwordHash = await bcrypt.hash(password, 12)
+        const existing = await prisma.user.findUnique({ where: { email } });
+        if (existing) {
+            throw new AppError(ErrorCode.CONFLICT, '该邮箱已被注册');
+        }
 
-    await prisma.user.create({
-      data: {
-        name,
-        email,
-        passwordHash,
-      },
-    })
+        const passwordHash = await bcrypt.hash(password, 12);
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error("Register Error:", error)
-    return NextResponse.json(
-      { error: "注册失败" },
-      { status: 500 }
-    )
-  }
-}
+        await prisma.user.create({
+            data: { name, email, passwordHash },
+        });
+
+        return successResponse({ success: true }, undefined, 201);
+    },
+});

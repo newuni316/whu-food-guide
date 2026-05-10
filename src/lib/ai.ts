@@ -1,78 +1,42 @@
-export interface ChatMessage {
-  role: "system" | "user" | "assistant"
-  content: string
-}
+/**
+ * AI 模块 — 向后兼容入口
+ *
+ * 重新导出新的 AI 模块，保持现有代码的兼容性。
+ * 新代码应直接从各子模块导入。
+ */
 
-export interface AIAgentContext {
-  cafeteria?: string
-  budget?: number
-  diet?: string
-  time?: string
-  location?: string
-}
+export { getLLMClient, chatWithHistory, chatStreamWithHistory } from './ai/client';
+export type { LLMMessage } from './ai/client';
+export { generateEmbedding, generateEmbeddings, embedDish, batchEmbedAllDishes } from './ai/embedding';
+export { semanticSearch, findSimilarDishes } from './ai/vector-search';
+export { retrieveContext, parseUserIntent } from './ai/retriever';
+export { getRecommendation } from './ai/recommender';
+export { analyzeSentiment, extractKeywords, generateReviewSummary } from './ai/sentiment';
+export { SYSTEM_PROMPT } from './ai/prompts';
 
-async function getClient() {
-  const { default: OpenAI } = await import("openai")
-  const provider = process.env.AI_PROVIDER || "openai"
-  if (provider === "deepseek") {
-    return new OpenAI({
-      apiKey: process.env.DEEPSEEK_API_KEY || "",
-      baseURL: "https://api.deepseek.com/v1",
-    })
-  }
-  return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || "",
-  })
-}
-
+/** @deprecated 使用 getLLMClient().chat() 代替 */
 export async function chatWithAI(
-  messages: ChatMessage[],
-  context?: AIAgentContext
+    messages: { role: string; content: string }[],
+    context?: Record<string, unknown>,
 ) {
-  if (!process.env.OPENAI_API_KEY && !process.env.DEEPSEEK_API_KEY) {
-    return "AI 服务未配置。请在环境变量中设置 OPENAI_API_KEY 或 DEEPSEEK_API_KEY。"
-  }
+    const { getLLMClient } = await import('./ai/client');
+    const { SYSTEM_PROMPT } = await import('./ai/prompts');
 
-  const systemPrompt = `你是"珞珈美食助手"，武汉大学智慧校园美食平台的 AI 助手。
-你精通武汉大学各个食堂、摊位和菜品。
-你的任务是帮助学生找到最适合的美食。
+    const client = getLLMClient();
 
-${context ? `当前上下文：
-${context.cafeteria ? `- 食堂：${context.cafeteria}` : ""}
-${context.budget ? `- 预算：¥${context.budget}` : ""}
-${context.diet ? `- 饮食需求：${context.diet}` : ""}
-${context.time ? `- 时间：${context.time}` : ""}
-${context.location ? `- 位置：${context.location}` : ""}
-` : ""}
+    const contextStr = context
+        ? Object.entries(context)
+              .filter(([, v]) => v)
+              .map(([k, v]) => `- ${k}: ${v}`)
+              .join('\n')
+        : '';
 
-请用友好、热情的语气回答，推荐具体菜品和窗口，给出价格参考。回答要简洁但信息丰富。`
+    const systemMessage = contextStr
+        ? `${SYSTEM_PROMPT}\n\n当前上下文：\n${contextStr}`
+        : SYSTEM_PROMPT;
 
-  try {
-    const client = await getClient()
-    const completion = await client.chat.completions.create({
-      model: process.env.AI_MODEL || "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...messages,
-      ],
-      temperature: 0.7,
-      max_tokens: 1024,
-    })
-    return completion.choices[0]?.message?.content || ""
-  } catch (error) {
-    console.error("AI Chat Error:", error)
-    return "AI 服务暂时不可用，请稍后再试。"
-  }
-}
-
-export async function generateEmbedding(text: string): Promise<number[]> {
-  const { default: OpenAI } = await import("openai")
-  const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || "",
-  })
-  const response = await client.embeddings.create({
-    model: "text-embedding-3-small",
-    input: text,
-  })
-  return response.data[0].embedding
+    return client.chat([
+        { role: 'system', content: systemMessage },
+        ...messages.map(m => ({ role: m.role as 'user' | 'assistant' | 'system', content: m.content })),
+    ]);
 }

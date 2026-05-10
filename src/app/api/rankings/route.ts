@@ -1,19 +1,32 @@
-import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { createMethodHandler, successResponse } from '@/lib/api/middleware';
+import { prisma } from '@/lib/prisma';
+import { withCache } from '@/lib/cache/redis';
+import { CacheKeys, CacheTTL } from '@/lib/cache/keys';
+import type { RankingType } from '@/types';
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const type = searchParams.get("type") || undefined
+export const GET = createMethodHandler({
+    GET: async (request) => {
+        const url = new URL(request.url);
+        const type = (url.searchParams.get('type') || 'daily') as RankingType;
+        const period = url.searchParams.get('period') || new Date().toISOString().split('T')[0];
 
-  try {
-    const rankings = await prisma.ranking.findMany({
-      where: type ? { type } : undefined,
-      orderBy: { score: "desc" },
-      take: 20,
-      include: { cafeteria: true },
-    })
-    return NextResponse.json(rankings)
-  } catch {
-    return NextResponse.json({ error: "获取排行失败" }, { status: 500 })
-  }
-}
+        const rankings = await withCache(
+            CacheKeys.ranking.byType(type, period),
+            CacheTTL.RANKING,
+            async () => {
+                return prisma.ranking.findMany({
+                    where: { type, period },
+                    orderBy: { score: 'desc' },
+                    take: 10,
+                    include: {
+                        canteen: {
+                            include: { campus: true },
+                        },
+                    },
+                });
+            },
+        );
+
+        return successResponse(rankings);
+    },
+});

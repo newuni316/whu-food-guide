@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_DB: whu_food_guide_test
           POSTGRES_USER: postgres
@@ -54,11 +54,16 @@ jobs:
           cache: "npm"
       - run: npm ci
       - run: npx prisma generate
-      - run: npx vitest run
+      - run: npx vitest run --coverage
         env:
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/whu_food_guide_test"
           NEXTAUTH_SECRET: "test-secret"
           NEXTAUTH_URL: "http://localhost:3000"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
 
   build:
     runs-on: ubuntu-latest

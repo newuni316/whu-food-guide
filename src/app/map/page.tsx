@@ -1,59 +1,58 @@
-import { MapPin, Navigation } from "lucide-react"
+import dynamic from "next/dynamic"
+import { prisma } from "@/lib/prisma"
+import { Skeleton } from "@/components/ui/skeleton"
+import type { MapMarker } from "@/types"
+
+const MapView = dynamic(() => import("@/components/map/map-view").then((m) => m.MapView), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full w-full flex items-center justify-center bg-muted/30">
+      <div className="text-center space-y-3">
+        <Skeleton variant="rectangular" className="h-12 w-12 rounded-full mx-auto" />
+        <p className="text-sm text-muted-foreground">地图加载中...</p>
+      </div>
+    </div>
+  ),
+})
 
 export const metadata = {
-  title: "校园美食地图",
-  description: "武汉大学美食地图 — 食堂位置导航",
+  title: "美食地图",
+  description: "武汉大学校园食堂地图 — 一目了然",
 }
 
-export default function MapPage() {
-  const areas = [
-    { name: "文理学部", restaurants: ["梅园食堂", "桂园食堂", "枫园食堂", "樱园咖啡"] },
-    { name: "工学部", restaurants: ["工学部黄焖鸡", "工学部烧烤摊"] },
-    { name: "信息学部", restaurants: ["信息学部一食堂", "信部螺蛳粉"] },
-    { name: "医学部", restaurants: ["医学部烤肉饭"] },
-    { name: "周边商圈", restaurants: ["广八路各餐厅", "街道口各餐厅"] },
-  ]
+async function getMapMarkers(): Promise<MapMarker[]> {
+  const canteens = await prisma.canteen.findMany({
+    where: { deletedAt: null },
+    select: {
+      id: true,
+      name: true,
+      latitude: true,
+      longitude: true,
+      slug: true,
+      avgRating: true,
+      isOpen: true,
+      campus: { select: { name: true } },
+    },
+  })
+
+  return canteens.map((c) => ({
+    id: c.id,
+    name: c.name,
+    latitude: c.latitude,
+    longitude: c.longitude,
+    campus: c.campus?.name || "",
+    slug: c.slug,
+    rating: c.avgRating,
+    isOpen: c.isOpen,
+  }))
+}
+
+export default async function MapPage() {
+  const markers = await getMapMarkers()
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">校园美食地图</h1>
-        <p className="mt-2 text-muted-foreground">
-          武汉大学各学部食堂分布总览
-        </p>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="aspect-square rounded-xl border border-border bg-secondary/50 flex items-center justify-center">
-          <div className="text-center">
-            <MapPin className="mx-auto h-12 w-12 text-primary/50" />
-            <p className="mt-2 text-sm text-muted-foreground">地图加载中...</p>
-            <p className="text-xs text-muted-foreground/60">(需要集成 Mapbox/高德地图 API)</p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">学部概览</h2>
-          {areas.map((area) => (
-            <div
-              key={area.name}
-              className="rounded-xl border border-border bg-card p-4 transition-all hover:shadow-md"
-            >
-              <h3 className="font-semibold">{area.name}</h3>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {area.restaurants.map((r) => (
-                  <span
-                    key={r}
-                    className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground"
-                  >
-                    {r}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)]">
+      <MapView markers={markers} />
     </div>
   )
 }

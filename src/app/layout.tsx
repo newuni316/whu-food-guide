@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Providers } from "@/components/providers"
 import { Navigation } from "@/components/layout/navigation"
+import { BottomNav } from "@/components/layout/bottom-nav"
 import "./globals.css"
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
@@ -34,7 +35,8 @@ export default function RootLayout({
       <body className="min-h-full bg-background text-foreground antialiased">
         <Providers>
           <Navigation />
-          <main className="min-h-[calc(100vh-4rem)]">{children}</main>
+          <main className="min-h-[calc(100vh-4rem)] pb-16 md:pb-0">{children}</main>
+          <BottomNav />
         </Providers>
       </body>
     </html>
