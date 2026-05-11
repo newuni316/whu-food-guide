@@ -9,12 +9,13 @@ import { prisma } from '@/lib/prisma';
 import { semanticSearch } from './vector-search';
 import { logger } from '@/lib/logger';
 import type { RecommendRequest, DishSummary } from '@/types';
+import type { Prisma } from '@prisma/client';
 
 /** 检索结果 */
 export interface RetrievalContext {
     dishes: DishSummary[];
     reviews: { content: string; rating: number; dishName: string }[];
-    canteenInfo: { name: string; hours: string; address: string; isOpen: boolean }[];
+    canteenInfo: { name: string; hours: Prisma.JsonValue; address: string; isOpen: boolean }[];
     query: string;
     filters: {
         budget?: number;

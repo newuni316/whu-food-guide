@@ -70,6 +70,7 @@ export interface RecommendRequest {
     query: string;
     budget?: number;
     diet?: string[];       // [减脂, 高蛋白, 素食]
+    tags?: string[];       // 额外标签过滤
     location?: string;     // 校区名
     time?: string;         // 早餐/午餐/晚餐/夜宵
     excludeIds?: string[]; // 排除的菜品ID
@@ -103,6 +104,7 @@ export interface SearchParams {
     sort?: 'rating' | 'price' | 'hot' | 'new';
     page?: number;
     pageSize?: number;
+    skip?: number;
 }
 
 export interface SearchResult {

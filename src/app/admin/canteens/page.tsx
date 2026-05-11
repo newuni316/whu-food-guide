@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
 import { Dialog } from '@/components/ui/dialog'
 import { toast } from '@/lib/toast'
-import { Plus, Pencil, Trash2, RefreshCw } from 'lucide-react'
+import { Plus, Pencil, Trash2, RefreshCw, MapPin, Link2 } from 'lucide-react'
 
 interface Campus {
     id: string
@@ -53,6 +53,8 @@ export default function AdminCanteensPage() {
     const [form, setForm] = useState(EMPTY_FORM)
     const [saving, setSaving] = useState(false)
     const [deleting, setDeleting] = useState<string | null>(null)
+    const [amapLink, setAmapLink] = useState('')
+    const [parsing, setParsing] = useState(false)
 
     const fetchData = useCallback(async () => {
         setLoading(true)
@@ -73,15 +75,76 @@ export default function AdminCanteensPage() {
             const json = await res.json()
             if (json.success) setCampuses(json.data)
         } catch {
-            // campuses API may not exist, fallback
         }
     }, [])
 
     useEffect(() => { fetchData(); fetchCampuses() }, [fetchData, fetchCampuses])
 
+    const generateSlug = (name: string) => {
+        return name
+            .toLowerCase()
+            .replace(/[\s]+/g, '-')
+            .replace(/[^\w\u4e00-\u9fa5-]/g, '')
+            .slice(0, 50)
+    }
+
+    const handleParseAmapLink = async () => {
+        if (!amapLink.trim()) {
+            toast({ type: 'error', title: '请输入高德地图链接' })
+            return
+        }
+        setParsing(true)
+        try {
+            const res = await fetch('/api/admin/parse-amap', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: amapLink.trim() }),
+            })
+            const json = await res.json()
+            if (json.success && json.data) {
+                const parsed = json.data
+                const updates: Partial<typeof form> = {}
+                let filled: string[] = []
+
+                if (parsed.name && form.name === '') {
+                    updates.name = parsed.name
+                    updates.slug = generateSlug(parsed.name)
+                    filled.push('名称')
+                }
+                if (typeof parsed.latitude === 'number' && !isNaN(parsed.latitude) && form.latitude === '') {
+                    updates.latitude = String(parsed.latitude)
+                    filled.push('纬度')
+                }
+                if (typeof parsed.longitude === 'number' && !isNaN(parsed.longitude) && form.longitude === '') {
+                    updates.longitude = String(parsed.longitude)
+                    filled.push('经度')
+                }
+                if (parsed.address && form.address === '') {
+                    updates.address = parsed.address
+                    filled.push('地址')
+                }
+
+                if (filled.length > 0) {
+                    setForm(f => ({ ...f, ...updates }))
+                    toast({ type: 'success', title: `已填充：${filled.join('、')}` })
+                } else {
+                    toast({ type: 'info', title: '链接中未找到可填充的新信息' })
+                }
+                setAmapLink('')
+            } else {
+                toast({ type: 'error', title: json.error?.message || '解析失败' })
+            }
+        } catch {
+            toast({ type: 'error', title: '解析请求失败' })
+        } finally {
+            setParsing(false)
+        }
+    }
+
     const openCreate = () => {
         setEditingId(null)
         setForm(EMPTY_FORM)
+        setAmapLink('')
         setDialogOpen(true)
     }
 
@@ -98,6 +161,7 @@ export default function AdminCanteensPage() {
             description: c.description || '',
             isOpen: c.isOpen,
         })
+        setAmapLink('')
         setDialogOpen(true)
     }
 
@@ -232,8 +296,41 @@ export default function AdminCanteensPage() {
                 open={dialogOpen}
                 onClose={() => setDialogOpen(false)}
                 title={editingId ? '编辑食堂' : '新增食堂'}
+                className="max-w-xl"
             >
                 <div className="space-y-4">
+                    <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                            <MapPin className="h-4 w-4 text-primary" />
+                            <span className="text-sm font-medium">从高德地图链接导入</span>
+                        </div>
+                        <div className="flex gap-2">
+                            <Input
+                                value={amapLink}
+                                onChange={e => setAmapLink(e.target.value)}
+                                placeholder="粘贴高德地图分享链接..."
+                                className="flex-1 text-sm"
+                                onKeyDown={e => { if (e.key === 'Enter') handleParseAmapLink() }}
+                            />
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleParseAmapLink}
+                                disabled={parsing}
+                            >
+                                {parsing ? '解析中...' : (
+                                    <>
+                                        <Link2 className="h-3.5 w-3.5 mr-1" />
+                                        解析
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1.5">
+                            支持 uri.amap.com、m.amap.com、高德App分享链接等格式
+                        </p>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="text-sm font-medium mb-1 block">名称 *</label>

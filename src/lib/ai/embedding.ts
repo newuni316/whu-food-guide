@@ -200,6 +200,26 @@ export function buildDishEmbeddingText(dish: {
 /**
  * 为单个菜品生成并存储 embedding
  */
+
+const UPSERT_EMBEDDING_SQL = `INSERT INTO "DishEmbedding" ("id", "dishId", "embedding", "content", "createdAt", "updatedAt") VALUES (gen_random_uuid()::text, $1, $2::vector, $3, NOW(), NOW()) ON CONFLICT ("dishId") DO UPDATE SET "embedding" = $2::vector, "content" = $3, "updatedAt" = NOW()`
+
+function validateEmbeddingParams(dishId: string, vectorStr: string, content: string): void {
+    if (!dishId || typeof dishId !== 'string') {
+        throw new Error('Invalid dishId')
+    }
+    if (!vectorStr.startsWith('[') || !vectorStr.endsWith(']')) {
+        throw new Error('Invalid vector format')
+    }
+    if (typeof content !== 'string') {
+        throw new Error('Invalid content')
+    }
+}
+
+async function upsertEmbedding(dishId: string, vectorStr: string, content: string): Promise<void> {
+    validateEmbeddingParams(dishId, vectorStr, content)
+    await prisma.$executeRawUnsafe(UPSERT_EMBEDDING_SQL, dishId, vectorStr, content)
+}
+
 export async function embedDish(dishId: string): Promise<boolean> {
     const dish = await prisma.dish.findUnique({
         where: { id: dishId },
@@ -215,18 +235,8 @@ export async function embedDish(dishId: string): Promise<boolean> {
 
     if (!embedding) return false;
 
-    await prisma.dishEmbedding.upsert({
-        where: { dishId: dish.id },
-        create: {
-            dishId: dish.id,
-            embedding: `[${embedding.join(',')}]`,
-            content: text,
-        },
-        update: {
-            embedding: `[${embedding.join(',')}]`,
-            content: text,
-        },
-    });
+    const vectorStr = `[${embedding.join(',')}]`;
+    await upsertEmbedding(dish.id, vectorStr, text);
 
     logger.info(`Embedded dish: ${dish.name}`, 'embedding');
     return true;
@@ -250,29 +260,23 @@ export async function batchEmbedAllDishes(): Promise<number> {
 
     let successCount = 0;
 
-    for (let i = 0; i < dishes.length; i++) {
-        if (!embeddings[i]) continue;
+    await prisma.$transaction(async (tx) => {
+        for (let i = 0; i < dishes.length; i++) {
+            if (!embeddings[i]) continue;
 
-        try {
-            await prisma.dishEmbedding.upsert({
-                where: { dishId: dishes[i].id },
-                create: {
-                    dishId: dishes[i].id,
-                    embedding: `[${embeddings[i]!.join(',')}]`,
-                    content: texts[i],
-                },
-                update: {
-                    embedding: `[${embeddings[i]!.join(',')}]`,
-                    content: texts[i],
-                },
-            });
-            successCount++;
-        } catch (error) {
-            logger.error(`Failed to embed dish ${dishes[i].name}`, 'embedding', {
-                error: (error as Error).message,
-            });
+            try {
+                const vectorStr = `[${embeddings[i]!.join(',')}]`;
+                validateEmbeddingParams(dishes[i].id, vectorStr, texts[i]);
+                await tx.$executeRawUnsafe(UPSERT_EMBEDDING_SQL, dishes[i].id, vectorStr, texts[i]);
+                successCount++;
+            } catch (error) {
+                logger.error(`Failed to embed dish ${dishes[i].name}`, 'embedding', {
+                    error: (error as Error).message,
+                });
+                throw error;
+            }
         }
-    }
+    });
 
     logger.info(`Batch embedding complete: ${successCount}/${dishes.length}`, 'embedding');
     return successCount;
