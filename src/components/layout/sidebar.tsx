@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
 import { getSidebarItems } from "@/config/areas"
 import {
@@ -65,18 +65,19 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const [search, setSearch] = useState("")
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const sidebarItems = getSidebarItems()
+  const sidebarItemsRef = useRef(sidebarItems)
+  sidebarItemsRef.current = sidebarItems
 
-  // Auto-expand group containing current path
   useEffect(() => {
     const currentSlug = pathname.split("/area/")[1]
     if (currentSlug) {
-      for (const group of sidebarItems) {
+      for (const group of sidebarItemsRef.current) {
         if (group.areas.some((a) => a.slug === currentSlug)) {
           setExpandedGroups((prev) => new Set([...prev, group.id]))
         }
       }
     }
-  }, [pathname, sidebarItems])
+  }, [pathname])
 
   const toggleGroup = (id: string) => {
     setExpandedGroups((prev) => {

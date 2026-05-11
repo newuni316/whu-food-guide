@@ -1,5 +1,6 @@
 import { withRole, successResponse } from '@/lib/api/middleware';
 import { AppError, ErrorCode } from '@/lib/errors';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -92,7 +93,27 @@ function parseAmapUrl(url: string): ParsedAmapLink | null {
         }
 
         // https://m.amap.com/?q=lat,lon&name=xxx
+        // https://www.amap.com/?p=POIID,lat,lon,name,address,citycode
         if (parsed.hostname === 'm.amap.com' || parsed.hostname === 'www.amap.com') {
+            const p = parsed.searchParams.get('p')
+            if (p) {
+                const parts = p.split(',')
+                if (parts.length >= 3) {
+                    const lat = parseFloat(parts[1])
+                    const lon = parseFloat(parts[2])
+                    if (!isNaN(lat) && !isNaN(lon)) {
+                        return {
+                            name: parts[3] ? decodeURIComponent(parts[3]) : null,
+                            latitude: lat,
+                            longitude: lon,
+                            address: parts[4] ? decodeURIComponent(parts[4]) : null,
+                            poiId: parts[0] || null,
+                            source: 'www.amap.com (p param)',
+                        }
+                    }
+                }
+            }
+
             const q = parsed.searchParams.get('q')
             const name = parsed.searchParams.get('name')
             if (q) {
@@ -106,6 +127,42 @@ function parseAmapUrl(url: string): ParsedAmapLink | null {
                         poiId: null,
                         source: 'm.amap.com',
                     }
+                }
+            }
+        }
+
+        // https://m.amap.com/detail/poiid or https://www.amap.com/detail/poiid
+        if (
+            (parsed.hostname === 'm.amap.com' || parsed.hostname === 'www.amap.com') &&
+            parsed.pathname.startsWith('/detail/')
+        ) {
+            const pathMatch = parsed.pathname.match(/\/detail\/([A-Za-z0-9]+)/)
+            if (pathMatch) {
+                return {
+                    name: parsed.searchParams.get('name') || null,
+                    latitude: null,
+                    longitude: null,
+                    address: null,
+                    poiId: pathMatch[1],
+                    source: `${parsed.hostname}/detail`,
+                }
+            }
+        }
+
+        // https://amap.com/place/poiid or https://ditu.amap.com/place/poiid
+        if (
+            (parsed.hostname === 'amap.com' || parsed.hostname === 'ditu.amap.com') &&
+            parsed.pathname.startsWith('/place/')
+        ) {
+            const pathMatch = parsed.pathname.match(/\/place\/([A-Za-z0-9]+)/)
+            if (pathMatch) {
+                return {
+                    name: parsed.searchParams.get('name') || null,
+                    latitude: null,
+                    longitude: null,
+                    address: null,
+                    poiId: pathMatch[1],
+                    source: `${parsed.hostname}/place`,
                 }
             }
         }
@@ -164,15 +221,34 @@ async function resolveShortLink(url: string, retries = 2): Promise<string | null
     for (let attempt = 0; attempt <= retries; attempt++) {
         try {
             const res = await fetch(url, {
-                method: 'HEAD',
+                method: 'GET',
                 redirect: 'follow',
-                signal: AbortSignal.timeout(3000),
+                signal: AbortSignal.timeout(5000),
             })
+
             if (res.url && res.url !== url) {
+                logger.info(`Short link resolved: ${url} -> ${res.url}`, 'parse-amap')
                 return res.url
             }
+
+            const html = await res.text()
+            const jsRedirect = html.match(/location\.href\s*=\s*["']([^"']+)["']/)
+            if (jsRedirect) {
+                logger.info(`Short link JS redirect: ${url} -> ${jsRedirect[1]}`, 'parse-amap')
+                return jsRedirect[1]
+            }
+
+            const metaRefresh = html.match(/<meta[^>]+http-equiv=["']refresh["'][^>]+content=["']\d+;\s*url=([^"'\s]+)["']/i)
+            if (metaRefresh) {
+                logger.info(`Short link meta refresh: ${url} -> ${metaRefresh[1]}`, 'parse-amap')
+                return metaRefresh[1]
+            }
+
             return null
         } catch (err) {
+            logger.warn(`Short link resolve attempt ${attempt + 1} failed: ${url}`, 'parse-amap', {
+                error: (err as Error).message,
+            })
             if (isRetryableError(err) && attempt < retries) {
                 await new Promise(r => setTimeout(r, 500 * (attempt + 1)))
                 continue
@@ -181,6 +257,17 @@ async function resolveShortLink(url: string, retries = 2): Promise<string | null
         }
     }
     return null
+}
+
+const SHORT_LINK_DOMAINS = ['s.amap.com', 'surl.amap.com']
+
+function isShortLink(url: string): boolean {
+    try {
+        const hostname = new URL(url).hostname
+        return SHORT_LINK_DOMAINS.includes(hostname)
+    } catch {
+        return SHORT_LINK_DOMAINS.some(d => url.includes(d))
+    }
 }
 
 const POST = withRole('admin', async (request) => {
@@ -192,10 +279,12 @@ const POST = withRole('admin', async (request) => {
     }
 
     const trimmedUrl = url.trim()
+    logger.info(`Parsing Amap link: ${trimmedUrl}`, 'parse-amap')
 
     let result = parseAmapUrl(trimmedUrl)
 
-    if (!result && (trimmedUrl.includes('s.amap.com') || trimmedUrl.includes('amap.com/share'))) {
+    if (!result && isShortLink(trimmedUrl)) {
+        logger.info(`Attempting short link resolution for: ${trimmedUrl}`, 'parse-amap')
         const resolvedUrl = await resolveShortLink(trimmedUrl)
         if (resolvedUrl) {
             result = parseAmapUrl(resolvedUrl)
@@ -203,9 +292,11 @@ const POST = withRole('admin', async (request) => {
     }
 
     if (!result) {
+        logger.warn(`Failed to parse Amap link: ${trimmedUrl}`, 'parse-amap')
         throw new AppError(ErrorCode.VALIDATION_ERROR, '无法解析该链接，请确认是高德地图分享链接');
     }
 
+    logger.info(`Parsed Amap link: ${JSON.stringify(result)}`, 'parse-amap')
     return successResponse(result);
 });
 
