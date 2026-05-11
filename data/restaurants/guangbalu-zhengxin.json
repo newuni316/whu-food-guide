@@ -1,0 +1,38 @@
+{
+  "name": "正新鸡排",
+  "slug": "guangbalu-zhengxin",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": [
+    "小吃",
+    "炸鸡"
+  ],
+  "price_range": [
+    10,
+    20
+  ],
+  "rating": {
+    "taste": 3.8,
+    "environment": 3.0,
+    "value": 4.0
+  },
+  "coordinates": {
+    "lat": 30.5383,
+    "lng": 114.3637
+  },
+  "address": "武汉市洪山区广八路70号",
+  "hours": "10:00-22:00",
+  "recommendations": [
+    "大鸡排",
+    "鸡柳",
+    "鸡米花"
+  ],
+  "tags": [
+    "炸",
+    "零食",
+    "罪恶",
+    "速食"
+  ],
+  "source": "实地调研",
+  "last_verified": "2026-05-09"
+}

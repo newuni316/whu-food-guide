@@ -1,0 +1,38 @@
+{
+  "name": "茶百道",
+  "slug": "guangbalu-chabaidao",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": [
+    "饮品",
+    "奶茶"
+  ],
+  "price_range": [
+    10,
+    18
+  ],
+  "rating": {
+    "taste": 4.3,
+    "environment": 4.0,
+    "value": 4.0
+  },
+  "coordinates": {
+    "lat": 30.5389,
+    "lng": 114.3644
+  },
+  "address": "武汉市洪山区广八路98号",
+  "hours": "09:30-22:30",
+  "recommendations": [
+    "杨枝甘露",
+    "豆乳玉麒麟",
+    "茉莉奶绿"
+  ],
+  "tags": [
+    "甜",
+    "下午茶",
+    "续命",
+    "网红"
+  ],
+  "source": "实地调研",
+  "last_verified": "2026-05-09"
+}

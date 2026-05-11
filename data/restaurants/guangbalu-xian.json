@@ -1,0 +1,39 @@
+{
+  "name": "西安小吃",
+  "slug": "guangbalu-xian",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": [
+    "面食",
+    "小吃"
+  ],
+  "price_range": [
+    10,
+    20
+  ],
+  "rating": {
+    "taste": 4.1,
+    "environment": 3.0,
+    "value": 4.2
+  },
+  "coordinates": {
+    "lat": 30.5384,
+    "lng": 114.3638
+  },
+  "address": "武汉市洪山区广八路76号",
+  "hours": "10:00-21:00",
+  "recommendations": [
+    "肉夹馍",
+    "油泼面",
+    "凉皮",
+    "羊肉泡馍"
+  ],
+  "tags": [
+    "管饱",
+    "经典",
+    "速食",
+    "西北风味"
+  ],
+  "source": "实地调研",
+  "last_verified": "2026-05-09"
+}

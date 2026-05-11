@@ -1,0 +1,38 @@
+{
+  "name": "张亮麻辣烫",
+  "slug": "guangbalu-zhangliang",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": [
+    "麻辣烫",
+    "快餐"
+  ],
+  "price_range": [
+    15,
+    30
+  ],
+  "rating": {
+    "taste": 4.0,
+    "environment": 3.5,
+    "value": 4.2
+  },
+  "coordinates": {
+    "lat": 30.5385,
+    "lng": 114.364
+  },
+  "address": "武汉市洪山区广八路82号",
+  "hours": "10:00-22:00",
+  "recommendations": [
+    "麻辣烫",
+    "酸辣粉",
+    "凉皮"
+  ],
+  "tags": [
+    "辣",
+    "自由搭配",
+    "暖胃",
+    "性价比"
+  ],
+  "source": "实地调研",
+  "last_verified": "2026-05-09"
+}

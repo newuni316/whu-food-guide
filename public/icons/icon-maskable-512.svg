@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb"/>
+      <stop offset="100%" style="stop-color:#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="64" fill="url(#bg)"/>
+  <g transform="translate(133.0, 112.5)">
+    <!-- Bowl -->
+    <ellipse cx="123.0" cy="184.5" rx="102.5" ry="49.199999999999996" fill="white" opacity="0.9"/>
+    <path d="M20.5 184.5 Q20.5 287.0 123.0 287.0 Q225.50000000000003 287.0 225.50000000000003 184.5" fill="white" opacity="0.9"/>
+    <!-- Steam -->
+    <path d="M82.0 102.5 Q102.5 61.5 82.0 20.5" stroke="white" stroke-width="8.2" fill="none" opacity="0.6"/>
+    <path d="M123.0 102.5 Q143.5 49.199999999999996 123.0 8.2" stroke="white" stroke-width="8.2" fill="none" opacity="0.6"/>
+    <path d="M164.0 102.5 Q184.5 61.5 164.0 20.5" stroke="white" stroke-width="8.2" fill="none" opacity="0.6"/>
+    <!-- Chopsticks -->
+    <line x1="225.50000000000003" y1="41.0" x2="164.0" y2="225.50000000000003" stroke="white" stroke-width="10.25" stroke-linecap="round"/>
+    <line x1="246.0" y1="49.199999999999996" x2="184.5" y2="225.50000000000003" stroke="white" stroke-width="10.25" stroke-linecap="round"/>
+  </g>
+  <text x="256" y="450.56" text-anchor="middle" fill="white" font-size="40.96" font-family="system-ui, sans-serif" font-weight="bold">武大美食</text>
+</svg>

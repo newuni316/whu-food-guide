@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Compass, BarChart3, Sparkles, Map } from "lucide-react"
+import { Home, Compass, BarChart3, Sparkles, Map, Gamepad2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 
@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { href: "/", label: "首页", icon: Home },
   { href: "/explore", label: "探索", icon: Compass },
   { href: "/rankings", label: "热榜", icon: BarChart3 },
-  { href: "/ai-chat", label: "AI助手", icon: Sparkles },
+  { href: "/game", label: "PK", icon: Gamepad2 },
   { href: "/map", label: "地图", icon: Map },
 ]
 

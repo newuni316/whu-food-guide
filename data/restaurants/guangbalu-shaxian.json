@@ -1,0 +1,39 @@
+{
+  "name": "沙县小吃",
+  "slug": "guangbalu-shaxian",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": [
+    "小吃",
+    "快餐"
+  ],
+  "price_range": [
+    8,
+    15
+  ],
+  "rating": {
+    "taste": 3.8,
+    "environment": 2.8,
+    "value": 4.5
+  },
+  "coordinates": {
+    "lat": 30.5381,
+    "lng": 114.3635
+  },
+  "address": "武汉市洪山区广八路58号",
+  "hours": "07:00-22:00",
+  "recommendations": [
+    "拌面",
+    "蒸饺",
+    "馄饨",
+    "炒粉"
+  ],
+  "tags": [
+    "便宜",
+    "速食",
+    "管饱",
+    "经典"
+  ],
+  "source": "实地调研",
+  "last_verified": "2026-05-09"
+}

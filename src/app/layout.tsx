@@ -1,8 +1,9 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Providers } from "@/components/providers"
 import { Navigation } from "@/components/layout/navigation"
 import { BottomNav } from "@/components/layout/bottom-nav"
+import { Sidebar, MobileSidebar } from "@/components/layout/sidebar"
 import "./globals.css"
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
@@ -13,14 +14,36 @@ export const metadata: Metadata = {
     default: "武大美食指北 — WHU Food Guide",
     template: "%s — 武大美食指北",
   },
-  description: "武汉大学智慧校园美食平台 — AI 推荐、校园美食地图、食堂评价",
-  keywords: ["武汉大学", "美食", "食堂", "珞珈", "whu", "校园美食"],
+  description: "武汉大学校园美食平台 — 分区浏览、美食地图、排行榜、广八路美食 PK",
+  keywords: ["武汉大学", "武大", "美食", "食堂", "珞珈", "广八路", "校园美食", "WHU"],
   authors: [{ name: "WHU Food Guide" }],
+  manifest: "/manifest.json",
   openGraph: {
     title: "武大美食指北",
-    description: "武汉大学智慧校园美食平台",
+    description: "武汉大学校园美食平台 — 发现武大每一口美味",
     type: "website",
+    locale: "zh_CN",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "武大美食指北",
+    description: "武汉大学校园美食平台",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "武大美食",
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#2563eb" },
+    { media: "(prefers-color-scheme: dark)", color: "#3b82f6" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
 }
 
 export default function RootLayout({
@@ -32,11 +55,20 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full`}
     >
+      <head>
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+      </head>
       <body className="min-h-full bg-background text-foreground antialiased">
         <Providers>
-          <Navigation />
-          <main className="min-h-[calc(100vh-4rem)] pb-16 md:pb-0">{children}</main>
+          <div className="flex min-h-screen">
+            <Sidebar />
+            <div className="flex-1 flex flex-col min-w-0">
+              <Navigation />
+              <main className="flex-1 pb-16 lg:pb-0">{children}</main>
+            </div>
+          </div>
           <BottomNav />
+          <MobileSidebar />
         </Providers>
       </body>
     </html>

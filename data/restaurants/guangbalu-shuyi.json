@@ -1,0 +1,37 @@
+{
+  "name": "书亦烧仙草",
+  "slug": "guangbalu-shuyi",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": [
+    "饮品",
+    "奶茶"
+  ],
+  "price_range": [
+    10,
+    16
+  ],
+  "rating": {
+    "taste": 4.1,
+    "environment": 3.8,
+    "value": 4.2
+  },
+  "coordinates": {
+    "lat": 30.5376,
+    "lng": 114.363
+  },
+  "address": "武汉市洪山区广八路28号",
+  "hours": "09:30-22:00",
+  "recommendations": [
+    "烧仙草",
+    "杨枝甘露",
+    "草莓多多"
+  ],
+  "tags": [
+    "甜",
+    "下午茶",
+    "清爽"
+  ],
+  "source": "实地调研",
+  "last_verified": "2026-05-09"
+}

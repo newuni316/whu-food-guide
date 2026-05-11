@@ -1,0 +1,39 @@
+{
+  "name": "周黑鸭",
+  "slug": "guangbalu-zhouheiya",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": [
+    "卤味",
+    "小吃"
+  ],
+  "price_range": [
+    20,
+    50
+  ],
+  "rating": {
+    "taste": 4.3,
+    "environment": 3.5,
+    "value": 3.5
+  },
+  "coordinates": {
+    "lat": 30.5377,
+    "lng": 114.3631
+  },
+  "address": "武汉市洪山区广八路34号",
+  "hours": "09:00-22:00",
+  "recommendations": [
+    "鸭脖",
+    "鸭锁骨",
+    "鸭翅",
+    "鸭舌"
+  ],
+  "tags": [
+    "甜辣",
+    "武汉特色",
+    "零食",
+    "伴手礼"
+  ],
+  "source": "实地调研",
+  "last_verified": "2026-05-09"
+}

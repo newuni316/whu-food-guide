@@ -1,0 +1,39 @@
+{
+  "name": "绝味鸭脖",
+  "slug": "guangbalu-juewei",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": [
+    "卤味",
+    "小吃"
+  ],
+  "price_range": [
+    15,
+    35
+  ],
+  "rating": {
+    "taste": 4.2,
+    "environment": 3.0,
+    "value": 3.8
+  },
+  "coordinates": {
+    "lat": 30.538,
+    "lng": 114.3634
+  },
+  "address": "武汉市洪山区广八路52号",
+  "hours": "09:00-23:00",
+  "recommendations": [
+    "鸭脖",
+    "鸭翅",
+    "鸭舌",
+    "藕片"
+  ],
+  "tags": [
+    "辣",
+    "零食",
+    "追剧搭档",
+    "卤味"
+  ],
+  "source": "实地调研",
+  "last_verified": "2026-05-09"
+}

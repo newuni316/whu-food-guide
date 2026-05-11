@@ -1,0 +1,39 @@
+{
+  "name": "蜜雪冰城",
+  "slug": "guangbalu-mixue",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": [
+    "饮品",
+    "冰淇淋"
+  ],
+  "price_range": [
+    4,
+    10
+  ],
+  "rating": {
+    "taste": 3.8,
+    "environment": 3.5,
+    "value": 4.8
+  },
+  "coordinates": {
+    "lat": 30.5382,
+    "lng": 114.3636
+  },
+  "address": "武汉市洪山区广八路64号",
+  "hours": "09:00-23:00",
+  "recommendations": [
+    "柠檬水",
+    "冰淇淋",
+    "珍珠奶茶",
+    "杨枝甘露"
+  ],
+  "tags": [
+    "甜",
+    "便宜",
+    "续命",
+    "学生最爱"
+  ],
+  "source": "实地调研",
+  "last_verified": "2026-05-09"
+}

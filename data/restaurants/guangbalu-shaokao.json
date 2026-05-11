@@ -1,0 +1,39 @@
+{
+  "name": "老地方烧烤",
+  "slug": "guangbalu-shaokao",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": [
+    "烧烤",
+    "夜宵"
+  ],
+  "price_range": [
+    40,
+    80
+  ],
+  "rating": {
+    "taste": 4.4,
+    "environment": 3.0,
+    "value": 3.8
+  },
+  "coordinates": {
+    "lat": 30.5393,
+    "lng": 114.3646
+  },
+  "address": "武汉市洪山区广八路126号",
+  "hours": "17:00-02:00",
+  "recommendations": [
+    "烤羊肉串",
+    "烤鸡翅",
+    "烤韭菜",
+    "烤茄子"
+  ],
+  "tags": [
+    "夜宵",
+    "聚餐",
+    "啤酒搭档",
+    "烟火气"
+  ],
+  "source": "实地调研",
+  "last_verified": "2026-05-09"
+}

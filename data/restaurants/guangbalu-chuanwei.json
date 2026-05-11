@@ -1,0 +1,39 @@
+{
+  "name": "川味坊麻辣香锅",
+  "slug": "guangbalu-chuanwei",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": [
+    "正餐",
+    "川菜"
+  ],
+  "price_range": [
+    25,
+    50
+  ],
+  "rating": {
+    "taste": 4.4,
+    "environment": 3.5,
+    "value": 4.0
+  },
+  "coordinates": {
+    "lat": 30.5394,
+    "lng": 114.3647
+  },
+  "address": "武汉市洪山区广八路132号",
+  "hours": "10:30-22:00",
+  "recommendations": [
+    "麻辣香锅",
+    "水煮肉片",
+    "回锅肉",
+    "宫保鸡丁"
+  ],
+  "tags": [
+    "辣",
+    "下饭",
+    "自由搭配",
+    "聚餐"
+  ],
+  "source": "实地调研",
+  "last_verified": "2026-05-09"
+}

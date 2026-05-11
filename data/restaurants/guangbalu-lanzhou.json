@@ -1,0 +1,39 @@
+{
+  "name": "兰州拉面",
+  "slug": "guangbalu-lanzhou",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": [
+    "面食",
+    "快餐"
+  ],
+  "price_range": [
+    12,
+    20
+  ],
+  "rating": {
+    "taste": 4.0,
+    "environment": 3.0,
+    "value": 4.3
+  },
+  "coordinates": {
+    "lat": 30.5391,
+    "lng": 114.3644
+  },
+  "address": "武汉市洪山区广八路108号",
+  "hours": "07:00-22:00",
+  "recommendations": [
+    "牛肉拉面",
+    "刀削面",
+    "拌面",
+    "大盘鸡"
+  ],
+  "tags": [
+    "汤面",
+    "管饱",
+    "经典",
+    "清真"
+  ],
+  "source": "实地调研",
+  "last_verified": "2026-05-09"
+}

@@ -1,0 +1,39 @@
+{
+  "name": "华莱士",
+  "slug": "guangbalu-huaishi",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": [
+    "快餐",
+    "炸鸡"
+  ],
+  "price_range": [
+    12,
+    25
+  ],
+  "rating": {
+    "taste": 3.5,
+    "environment": 3.2,
+    "value": 4.2
+  },
+  "coordinates": {
+    "lat": 30.5379,
+    "lng": 114.3633
+  },
+  "address": "武汉市洪山区广八路46号",
+  "hours": "09:00-23:00",
+  "recommendations": [
+    "炸鸡汉堡",
+    "鸡肉卷",
+    "薯条",
+    "可乐"
+  ],
+  "tags": [
+    "快餐",
+    "便宜",
+    "学生最爱",
+    "外卖"
+  ],
+  "source": "实地调研",
+  "last_verified": "2026-05-09"
+}

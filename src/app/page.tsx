@@ -1,11 +1,12 @@
 import Link from "next/link"
-import { ArrowRight, Sparkles, Compass, TrendingUp, Bot, MapPin } from "lucide-react"
+import { ArrowRight, Sparkles, Compass, TrendingUp, Bot, MapPin, Gamepad2 } from "lucide-react"
 import { getCanteens } from "@/lib/api"
 import { CafeteriaGrid } from "@/components/cafeteria-grid"
 import { HotDishesCarousel } from "@/components/hot-dishes-carousel"
 import { QueueIndicator } from "@/components/queue-indicator"
 import { FeaturedReviews } from "@/components/featured-reviews"
 import { MotionWrapper } from "@/components/motion-wrapper"
+import { StructuredData } from "@/components/seo/structured-data"
 import { prisma } from "@/lib/prisma"
 
 async function getHotDishes() {
@@ -57,6 +58,7 @@ export default async function HomePage() {
 
   return (
     <div>
+      <StructuredData type="website" />
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border min-h-[80vh] flex items-center">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-blue-500/5" />
@@ -115,7 +117,7 @@ export default async function HomePage() {
           {[
             { href: "/explore", icon: Compass, label: "探索美食", desc: "发现所有食堂和摊位" },
             { href: "/rankings", icon: TrendingUp, label: "实时热榜", desc: "今日最受欢迎的美食" },
-            { href: "/ai-chat", icon: Bot, label: "AI 助手", desc: "智能推荐你的专属美食" },
+            { href: "/game", icon: Gamepad2, label: "美食PK", desc: "广八路美食投票排行" },
             { href: "/map", icon: MapPin, label: "校园地图", desc: "食堂位置一目了然" },
           ].map((item, i) => {
             const Icon = item.icon

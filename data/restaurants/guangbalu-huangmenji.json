@@ -1,0 +1,38 @@
+{
+  "name": "杨铭宇黄焖鸡米饭",
+  "slug": "guangbalu-huangmenji",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": [
+    "快餐",
+    "米饭"
+  ],
+  "price_range": [
+    15,
+    22
+  ],
+  "rating": {
+    "taste": 4.1,
+    "environment": 3.2,
+    "value": 4.3
+  },
+  "coordinates": {
+    "lat": 30.539,
+    "lng": 114.3643
+  },
+  "address": "武汉市洪山区广八路102号",
+  "hours": "10:00-21:30",
+  "recommendations": [
+    "黄焖鸡米饭",
+    "黄焖排骨",
+    "黄焖茄子"
+  ],
+  "tags": [
+    "下饭",
+    "经典",
+    "速食",
+    "管饱"
+  ],
+  "source": "实地调研",
+  "last_verified": "2026-05-09"
+}

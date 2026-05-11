@@ -1,0 +1,38 @@
+{
+  "name": "太二酸菜鱼",
+  "slug": "guangbalu-taier",
+  "campus": "surroundings",
+  "area": "广八路",
+  "category": [
+    "正餐",
+    "鱼"
+  ],
+  "price_range": [
+    50,
+    80
+  ],
+  "rating": {
+    "taste": 4.6,
+    "environment": 4.0,
+    "value": 3.5
+  },
+  "coordinates": {
+    "lat": 30.5395,
+    "lng": 114.3648
+  },
+  "address": "武汉市洪山区广八路150号",
+  "hours": "11:00-14:00, 17:00-21:30",
+  "recommendations": [
+    "老坛子酸菜鱼",
+    "水煮鱼",
+    "凉拌鱼皮"
+  ],
+  "tags": [
+    "酸",
+    "聚餐",
+    "网红",
+    "排队"
+  ],
+  "source": "实地调研",
+  "last_verified": "2026-05-09"
+}
