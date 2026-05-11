@@ -1,4 +1,4 @@
-const CACHE_NAME = "whu-food-guide-v1"
+const CACHE_NAME = "whu-food-guide-v2"
 const STATIC_ASSETS = [
   "/",
   "/explore",
