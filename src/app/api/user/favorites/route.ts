@@ -12,8 +12,7 @@ const addFavoriteSchema = z.object({
 /** GET — 获取收藏列表 */
 export const GET = createMethodHandler({
     GET: withAuth(async (request) => {
-        const session = (request as Request & { session: { user: { id: string } } }).session;
-        const userId = session.user.id;
+        const userId = request.session.user.id;
         const { page, pageSize, skip } = parsePagination(new URL(request.url));
 
         const [favorites, total] = await Promise.all([
@@ -47,8 +46,7 @@ export const GET = createMethodHandler({
 /** POST — 添加收藏 */
 export const POST = createMethodHandler({
     POST: withAuth(async (request) => {
-        const session = (request as Request & { session: { user: { id: string } } }).session;
-        const userId = session.user.id;
+        const userId = request.session.user.id;
         const body = await request.json();
 
         const parsed = addFavoriteSchema.safeParse(body);
@@ -81,8 +79,7 @@ export const POST = createMethodHandler({
 /** DELETE — 取消收藏 */
 export const DELETE = createMethodHandler({
     DELETE: withAuth(async (request) => {
-        const session = (request as Request & { session: { user: { id: string } } }).session;
-        const userId = session.user.id;
+        const userId = request.session.user.id;
         const url = new URL(request.url);
         const dishId = url.searchParams.get('dishId');
 

@@ -61,10 +61,25 @@ export async function checkRateLimit(
 
 /**
  * 从请求中提取客户端 IP
+ *
+ * 优先使用 Vercel 专用头（不可伪造），其次取 x-forwarded-for 最后一个可信代理 IP。
  */
 export function getClientIp(request: Request): string {
+    // Vercel 环境：专用头由边缘网络注入，不可被客户端伪造
+    const vercelIp = request.headers.get('x-vercel-forwarded-for');
+    if (vercelIp) {
+        return vercelIp.split(',')[0]?.trim() || 'unknown';
+    }
+
+    // x-forwarded-for 可能被客户端伪造，取最后一个代理 IP（最接近服务端）
+    const forwarded = request.headers.get('x-forwarded-for');
+    if (forwarded) {
+        const parts = forwarded.split(',').map(s => s.trim()).filter(Boolean);
+        // 最后一个 IP 通常是离服务端最近的可信代理
+        return parts[parts.length - 1] || 'unknown';
+    }
+
     return (
-        request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
         request.headers.get('x-real-ip') ||
         'unknown'
     );

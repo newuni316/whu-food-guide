@@ -19,8 +19,7 @@ const updateProfileSchema = z.object({
 /** GET — 获取当前用户画像 */
 export const GET = createMethodHandler({
     GET: withAuth(async (request) => {
-        const session = (request as Request & { session: { user: { id: string } } }).session;
-        const userId = session.user.id;
+        const userId = request.session.user.id;
 
         const user = await prisma.user.findUnique({
             where: { id: userId },
@@ -57,8 +56,7 @@ export const GET = createMethodHandler({
 /** PUT — 更新用户画像 */
 export const PUT = createMethodHandler({
     PUT: withAuth(async (request) => {
-        const session = (request as Request & { session: { user: { id: string } } }).session;
-        const userId = session.user.id;
+        const userId = request.session.user.id;
         const body = await request.json();
 
         const parsed = updateProfileSchema.safeParse(body);

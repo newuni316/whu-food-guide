@@ -9,6 +9,8 @@ import { MotionWrapper } from "@/components/motion-wrapper"
 import { StructuredData } from "@/components/seo/structured-data"
 import { prisma } from "@/lib/prisma"
 
+export const revalidate = 300 // ISR: 5 分钟重新验证
+
 async function getHotDishes() {
   return prisma.dish.findMany({
     where: { deletedAt: null, isAvailable: true },

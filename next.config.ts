@@ -2,15 +2,16 @@ import type { NextConfig } from "next"
 import path from "path"
 
 const nextConfig: NextConfig = {
-  turbopack: {
-    root: path.resolve(__dirname),
-  },
+  output: "standalone",
+  poweredByHeader: false,
+  compress: true,
   images: {
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "**",
-      },
+      { protocol: "https", hostname: "*.tile.openstreetmap.org" },
+      { protocol: "https", hostname: "avatars.githubusercontent.com" },
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
+      { protocol: "https", hostname: "*.vercel-storage.com" },
+      { protocol: "https", hostname: "*.cloudinary.com" },
     ],
   },
   experimental: {

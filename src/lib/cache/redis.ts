@@ -12,6 +12,19 @@ const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 let redis: Redis | null = null;
 let connectionFailed = false;
 
+// 进程退出时清理连接
+if (typeof process !== 'undefined') {
+    const cleanup = () => {
+        if (redis) {
+            redis.quit().catch(() => {});
+            redis = null;
+        }
+    };
+    process.on('SIGTERM', cleanup);
+    process.on('SIGINT', cleanup);
+    process.on('beforeExit', cleanup);
+}
+
 function createRedisClient(): Redis | null {
     if (connectionFailed) return null;
 

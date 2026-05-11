@@ -9,6 +9,7 @@ import { PrismaClient, UserRole } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 import bcrypt from 'bcryptjs';
+import { gcj02ToWgs84 } from '@/lib/coords';
 
 const prisma = new PrismaClient();
 
@@ -272,6 +273,9 @@ async function seedCanteensAndDishes(
 
         console.log(`  导入: ${data.name}`);
 
+        // 高德坐标 (GCJ-02) 转 WGS-84
+        const [wgsLng, wgsLat] = gcj02ToWgs84(data.coordinates.lng, data.coordinates.lat);
+
         // 创建/更新食堂
         const canteen = await prisma.canteen.upsert({
             where: { slug: data.slug },
@@ -279,8 +283,8 @@ async function seedCanteensAndDishes(
                 name: data.name,
                 campusId,
                 address: data.address,
-                latitude: data.coordinates.lat,
-                longitude: data.coordinates.lng,
+                latitude: wgsLat,
+                longitude: wgsLng,
                 phone: data.phone || null,
                 hours: parseHours(data.hours),
                 images: data.images || [],
@@ -294,8 +298,8 @@ async function seedCanteensAndDishes(
                 slug: data.slug,
                 campusId,
                 address: data.address,
-                latitude: data.coordinates.lat,
-                longitude: data.coordinates.lng,
+                latitude: wgsLat,
+                longitude: wgsLng,
                 phone: data.phone || null,
                 hours: parseHours(data.hours),
                 images: data.images || [],

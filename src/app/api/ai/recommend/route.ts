@@ -32,7 +32,7 @@ export const POST = createMethodHandler({
         }
 
         // 获取用户 ID（如果已登录）
-        const session = (request as Request & { session?: { user?: { id?: string } } }).session;
+        const session = await (await import('@/lib/auth')).auth();
         const userId = session?.user?.id;
 
         const result = await getRecommendation(body, userId);

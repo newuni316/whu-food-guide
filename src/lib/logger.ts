@@ -1,7 +1,7 @@
 /**
  * 结构化日志
  *
- * 轻量级日志封装，支持不同级别和结构化输出。
+ * 轻量级日志封装，支持不同级别、结构化输出、请求链路追踪。
  * 生产环境可接入 pino 或其他日志服务。
  */
 
@@ -12,6 +12,7 @@ interface LogEntry {
     message: string;
     timestamp: string;
     context?: string;
+    correlationId?: string;
     data?: Record<string, unknown>;
 }
 
@@ -25,15 +26,36 @@ const LOG_LEVELS: Record<LogLevel, number> = {
 const MIN_LEVEL: LogLevel =
     process.env.NODE_ENV === 'production' ? 'info' : 'debug';
 
+/** 敏感字段名列表（值将被脱敏） */
+const SENSITIVE_KEYS = new Set([
+    'password', 'passwordHash', 'token', 'secret', 'apiKey', 'api_key',
+    'authorization', 'cookie', 'OPENAI_API_KEY', 'DEEPSEEK_API_KEY', 'NEXTAUTH_SECRET',
+]);
+
 function shouldLog(level: LogLevel): boolean {
     return LOG_LEVELS[level] >= LOG_LEVELS[MIN_LEVEL];
 }
 
+function sanitizeData(data: Record<string, unknown>): Record<string, unknown> {
+    const sanitized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data)) {
+        if (SENSITIVE_KEYS.has(key)) {
+            sanitized[key] = '***';
+        } else if (typeof value === 'object' && value !== null) {
+            sanitized[key] = sanitizeData(value as Record<string, unknown>);
+        } else {
+            sanitized[key] = value;
+        }
+    }
+    return sanitized;
+}
+
 function formatEntry(entry: LogEntry): string {
-    const { level, message, timestamp, context, data } = entry;
+    const { level, message, timestamp, context, correlationId, data } = entry;
     const prefix = context ? `[${context}]` : '';
+    const corr = correlationId ? ` (${correlationId})` : '';
     const dataStr = data ? ` ${JSON.stringify(data)}` : '';
-    return `${timestamp} ${level.toUpperCase()} ${prefix} ${message}${dataStr}`;
+    return `${timestamp} ${level.toUpperCase()} ${prefix}${corr} ${message}${dataStr}`;
 }
 
 function log(level: LogLevel, message: string, context?: string, data?: Record<string, unknown>) {
@@ -44,7 +66,7 @@ function log(level: LogLevel, message: string, context?: string, data?: Record<s
         message,
         timestamp: new Date().toISOString(),
         context,
-        data,
+        data: data ? sanitizeData(data) : undefined,
     };
 
     const formatted = formatEntry(entry);

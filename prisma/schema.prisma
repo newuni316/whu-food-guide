@@ -412,7 +412,7 @@ model Notification {
 model UserAchievement {
   id          String   @id @default(cuid())
   userId      String
-  type        String   @unique // first_review/ten_reviews/food_explorer/...
+  type        String   // first_review/ten_reviews/food_explorer/...
   title       String
   description String?
   icon        String?
@@ -421,6 +421,7 @@ model UserAchievement {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, type])
+  @@index([userId])
 }
 
 // ──────────────────────────────────────────────

@@ -132,17 +132,31 @@ export function handleApiError(error: unknown): Response {
     // Prisma 错误
     if (error && typeof error === 'object' && 'code' in error) {
         const prismaError = error as { code: string; meta?: Record<string, unknown> };
-        if (prismaError.code === 'P2002') {
-            const err = new AppError(
-                ErrorCode.UNIQUE_CONSTRAINT,
-                '数据已存在',
-                prismaError.meta,
-            );
-            return Response.json(err.toJSON(), { status: 409 });
-        }
-        if (prismaError.code === 'P2025') {
-            const err = new NotFoundError('记录');
-            return Response.json(err.toJSON(), { status: 404 });
+        switch (prismaError.code) {
+            case 'P2002': {
+                const err = new AppError(ErrorCode.UNIQUE_CONSTRAINT, '数据已存在', prismaError.meta);
+                return Response.json(err.toJSON(), { status: 409 });
+            }
+            case 'P2025': {
+                const err = new NotFoundError('记录');
+                return Response.json(err.toJSON(), { status: 404 });
+            }
+            case 'P2003': {
+                const err = new AppError(ErrorCode.VALIDATION_ERROR, '关联数据不存在', prismaError.meta);
+                return Response.json(err.toJSON(), { status: 400 });
+            }
+            case 'P2014': {
+                const err = new AppError(ErrorCode.VALIDATION_ERROR, '数据关系冲突', prismaError.meta);
+                return Response.json(err.toJSON(), { status: 400 });
+            }
+            case 'P2021': {
+                const err = new AppError(ErrorCode.DATABASE_ERROR, '数据表不存在', prismaError.meta);
+                return Response.json(err.toJSON(), { status: 500 });
+            }
+            case 'P2024': {
+                const err = new AppError(ErrorCode.DATABASE_ERROR, '数据库连接超时', prismaError.meta);
+                return Response.json(err.toJSON(), { status: 503 });
+            }
         }
     }
 

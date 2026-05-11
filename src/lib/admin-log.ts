@@ -7,28 +7,24 @@
 
 import { prisma } from '@/lib/prisma';
 import { invalidatePattern } from '@/lib/cache/redis';
-
-interface AdminSession {
-    user: { id: string; role: string };
-}
+import type { AuthenticatedRequest } from '@/lib/api/middleware';
 
 /**
  * 记录管理员操作日志
  *
- * @param request - 当前请求（含 session）
+ * @param request - 已认证的请求（含 session）
  * @param action  - 操作类型，如 "create_canteen", "delete_dish", "update_user_role"
  * @param target  - 操作目标标识，如食堂 ID、菜品名称
  * @param detail  - 附加信息（可选）
  */
 export async function logAdmin(
-    request: Request,
+    request: AuthenticatedRequest,
     action: string,
     target?: string,
     detail?: Record<string, unknown>,
 ): Promise<void> {
     try {
-        const session = (request as Request & { session: AdminSession }).session;
-        const adminId = session?.user?.id;
+        const adminId = request.session.user.id;
         if (!adminId) return;
 
         await prisma.adminLog.create({

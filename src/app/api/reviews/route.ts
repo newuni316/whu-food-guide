@@ -58,8 +58,7 @@ export const GET = createMethodHandler({
 /** POST — 创建评价 */
 export const POST = createMethodHandler({
     POST: withAuth(async (request) => {
-        const session = (request as Request & { session: { user: { id: string } } }).session;
-        const userId = session.user.id;
+        const userId = request.session.user.id;
         const body = await request.json();
 
         const parsed = createReviewSchema.safeParse(body);

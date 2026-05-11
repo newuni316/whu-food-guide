@@ -1,11 +1,13 @@
 FROM node:20-alpine AS base
 
+# ── 依赖安装（包含 devDependencies，用于构建） ──
 FROM base AS deps
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+RUN npm ci
 
+# ── 构建阶段 ──
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -13,9 +15,10 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
+# ── 运行阶段（仅复制产物，最小镜像） ──
 FROM base AS runner
 WORKDIR /app
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 RUN apk add --no-cache openssl wget
 RUN addgroup --system --gid 1001 nodejs
@@ -29,10 +32,10 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 USER nextjs
 EXPOSE 3000
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
 CMD ["node", "server.js"]

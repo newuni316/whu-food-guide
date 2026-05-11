@@ -46,7 +46,7 @@ export function parseUserIntent(query: string): {
     } = { cleanQuery };
 
     // 提取预算
-    const budgetMatch = query.match(/(\d+)\s*[块元以内下以下]/);
+    const budgetMatch = cleanQuery.match(/(\d+)\s*[块元以内下以下]/);
     if (budgetMatch) {
         result.budget = parseInt(budgetMatch[1], 10);
         cleanQuery = cleanQuery.replace(budgetMatch[0], '');
@@ -57,18 +57,20 @@ export function parseUserIntent(query: string): {
         { pattern: /减脂|低脂|低热量|清淡/, tag: '减脂' },
         { pattern: /增肌|高蛋白|蛋白质/, tag: '高蛋白' },
         { pattern: /素食|蔬菜|素/, tag: '素食' },
-        { pattern: /辣|麻辣|重口/, tag: '辣' },
+        { pattern: /麻辣|重口|微辣|特辣/, tag: '辣' },
         { pattern: /早餐|早饭/, tag: '早餐' },
         { pattern: /夜宵|宵夜|深夜/, tag: '夜宵' },
-        { pattern: /快餐|快/, tag: '快餐' },
+        { pattern: /快餐|速食/, tag: '快餐' },
         { pattern: /聚餐|聚会/, tag: '聚餐' },
         { pattern: /性价比|便宜|省钱/, tag: '性价比' },
     ];
 
     const diet: string[] = [];
     for (const { pattern, tag } of dietKeywords) {
-        if (pattern.test(query)) {
+        const match = cleanQuery.match(pattern);
+        if (match) {
             diet.push(tag);
+            cleanQuery = cleanQuery.replace(match[0], '');
         }
     }
     if (diet.length > 0) result.diet = diet;
@@ -77,11 +79,13 @@ export function parseUserIntent(query: string): {
     const locationKeywords = [
         '文理学部', '工学部', '信息学部', '医学部',
         '梅园', '桂园', '枫园', '樱园', '湖滨',
-        '广八路', '街道口',
+        '广八路', '街道口', '银泰', '光谷', '楚河汉街',
+        '徐东', '虎泉', '亚贸', '群光',
     ];
     for (const loc of locationKeywords) {
-        if (query.includes(loc)) {
+        if (cleanQuery.includes(loc)) {
             result.location = loc;
+            cleanQuery = cleanQuery.replace(loc, '');
             break;
         }
     }
@@ -94,8 +98,10 @@ export function parseUserIntent(query: string): {
         { pattern: /夜宵|宵夜|深夜/, time: 'late_night' },
     ];
     for (const { pattern, time } of timeKeywords) {
-        if (pattern.test(query)) {
+        const match = cleanQuery.match(pattern);
+        if (match) {
             result.time = time;
+            cleanQuery = cleanQuery.replace(match[0], '');
             break;
         }
     }

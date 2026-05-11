@@ -9,9 +9,20 @@ import { auth } from '@/lib/auth';
 import { AppError, ErrorCode, handleApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
 import type { ApiResponse, Pagination } from '@/types';
+import type { Session } from 'next-auth';
+
+/** 携带已验证 session 的请求 */
+export interface AuthenticatedRequest extends Request {
+    session: Session;
+}
 
 type RouteHandler = (
     request: Request,
+    context?: { params?: Record<string, string> | Promise<Record<string, string>> },
+) => Promise<Response>;
+
+type AuthenticatedRouteHandler = (
+    request: AuthenticatedRequest,
     context?: { params?: Record<string, string> | Promise<Record<string, string>> },
 ) => Promise<Response>;
 
@@ -57,18 +68,26 @@ export function parsePagination(url: URL): { page: number; pageSize: number; ski
 }
 
 /**
+ * 类型安全的 session 获取
+ */
+export async function getSession(): Promise<Session> {
+    const session = await auth();
+    if (!session?.user) {
+        throw new AppError(ErrorCode.UNAUTHORIZED, '请先登录');
+    }
+    return session;
+}
+
+/**
  * 认证中间件 — 要求登录
  */
-export function withAuth(handler: RouteHandler): RouteHandler {
+export function withAuth(handler: AuthenticatedRouteHandler): RouteHandler {
     return async (request, context) => {
         try {
-            const session = await auth();
-            if (!session?.user) {
-                throw new AppError(ErrorCode.UNAUTHORIZED, '请先登录');
-            }
-            // 将 session 注入到 request 的自定义属性中
-            (request as Request & { session: typeof session }).session = session;
-            return handler(request, context);
+            const session = await getSession();
+            // 使用 Object.assign 保留原始 request，附加类型安全的 session
+            const authReq = Object.assign(request, { session }) as AuthenticatedRequest;
+            return handler(authReq, context);
         } catch (error) {
             return handleApiError(error);
         }
@@ -78,10 +97,9 @@ export function withAuth(handler: RouteHandler): RouteHandler {
 /**
  * 角色中间件 — 要求特定角色
  */
-export function withRole(role: 'admin' | 'superadmin', handler: RouteHandler): RouteHandler {
+export function withRole(role: 'admin' | 'superadmin', handler: AuthenticatedRouteHandler): RouteHandler {
     return withAuth(async (request, context) => {
-        const session = (request as Request & { session: { user: { role: string } } }).session;
-        if (session.user.role !== role && session.user.role !== 'superadmin') {
+        if (request.session.user.role !== role && request.session.user.role !== 'superadmin') {
             throw new AppError(ErrorCode.FORBIDDEN, '需要管理员权限');
         }
         return handler(request, context);
