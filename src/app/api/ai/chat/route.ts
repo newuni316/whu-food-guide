@@ -55,13 +55,18 @@ export const POST = createMethodHandler({
             ? `${SYSTEM_PROMPT}\n\n以下是检索到的相关信息，请基于这些信息回答：\n\n${ragContext}`
             : SYSTEM_PROMPT;
 
-        const content = await client.chat(
-            messages.map((m: { role: string; content: string }) => ({
-                role: m.role as 'system' | 'user' | 'assistant',
-                content: m.content,
-            })),
-            { temperature: 0.7, maxTokens: 1024 },
-        );
+        let content: string;
+        try {
+            content = await client.chat(
+                messages.map((m: { role: string; content: string }) => ({
+                    role: m.role as 'system' | 'user' | 'assistant',
+                    content: m.content,
+                })),
+                { temperature: 0.7, maxTokens: 1024 },
+            );
+        } catch {
+            content = '抱歉，AI 服务暂时不可用，请稍后再试。你也可以直接浏览食堂和菜品信息。';
+        }
 
         // 保存对话记录
         const session = (request as Request & { session?: { user?: { id?: string } } }).session;

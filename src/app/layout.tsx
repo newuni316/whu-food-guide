@@ -11,12 +11,12 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata: Metadata = {
   title: {
-    default: "武大美食指北 — WHU Food Guide",
+    default: "武大美食指北 — 武汉大学校园美食平台",
     template: "%s — 武大美食指北",
   },
   description: "武汉大学校园美食平台 — 分区浏览、美食地图、排行榜、广八路美食 PK",
   keywords: ["武汉大学", "武大", "美食", "食堂", "珞珈", "广八路", "校园美食", "WHU"],
-  authors: [{ name: "WHU Food Guide" }],
+  authors: [{ name: "武大美食指北" }],
   manifest: "/manifest.json",
   openGraph: {
     title: "武大美食指北",

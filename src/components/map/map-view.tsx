@@ -2,14 +2,20 @@
 
 import { useState, useMemo, useCallback } from "react"
 import { MapContainer, TileLayer, useMap } from "react-leaflet"
+import L from "leaflet"
 import { CanteenMarker } from "./canteen-marker"
 import { MapSearch } from "./map-search"
 import { MapSidebar } from "./map-sidebar"
 import type { MapMarker } from "@/types"
 import "leaflet/dist/leaflet.css"
 
-const WHU_CENTER: [number, number] = [30.54, 114.36]
+const WHU_CENTER: [number, number] = [30.5365, 114.3614]
 const ZOOM = 15
+// 限制拖动范围：武大及周边商圈（约 5km 半径）
+const MAX_BOUNDS = L.latLngBounds(
+  [30.49, 114.31], // 西南角
+  [30.58, 114.41], // 东北角
+)
 
 function FlyTo({ position }: { position: [number, number] }) {
   const map = useMap()
@@ -69,6 +75,10 @@ export function MapView({ markers }: MapViewProps) {
       <MapContainer
         center={WHU_CENTER}
         zoom={ZOOM}
+        maxBounds={MAX_BOUNDS}
+        maxBoundsViscosity={0.8}
+        minZoom={13}
+        maxZoom={18}
         className="h-full w-full z-0"
         zoomControl={false}
       >

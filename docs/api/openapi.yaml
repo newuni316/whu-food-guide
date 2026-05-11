@@ -1,6 +1,6 @@
 openapi: "3.0.3"
 info:
-  title: WHU Food Guide API
+  title: 武大美食指北 API
   description: 武汉大学智慧校园美食平台 API
   version: "2.0.0"
 servers:

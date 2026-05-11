@@ -1,6 +1,7 @@
 import { withRole, successResponse } from '@/lib/api/middleware';
 import { AppError, ErrorCode } from '@/lib/errors';
 import { logger } from '@/lib/logger';
+import { gcj02ToWgs84 } from '@/lib/coords';
 
 export const dynamic = 'force-dynamic';
 
@@ -294,6 +295,13 @@ const POST = withRole('admin', async (request) => {
     if (!result) {
         logger.warn(`Failed to parse Amap link: ${trimmedUrl}`, 'parse-amap')
         throw new AppError(ErrorCode.VALIDATION_ERROR, '无法解析该链接，请确认是高德地图分享链接');
+    }
+
+    // 高德坐标 (GCJ-02) 转 WGS-84，修正 OSM 地图偏移
+    if (result.latitude != null && result.longitude != null) {
+        const [wgsLng, wgsLat] = gcj02ToWgs84(result.longitude, result.latitude);
+        result.longitude = wgsLng;
+        result.latitude = wgsLat;
     }
 
     logger.info(`Parsed Amap link: ${JSON.stringify(result)}`, 'parse-amap')

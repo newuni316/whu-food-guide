@@ -1,4 +1,4 @@
-# WHU Food Guide 重构上下文
+# 武大美食指北 重构上下文
 
 > 本文件用于在新对话中快速恢复重构进度。
 > 发送给 Claude 时附上本文件即可继续。
@@ -180,10 +180,10 @@ npm run dev                   # 启动开发服务器
 
 发送本文件给 Claude，然后说：
 
-> 继续重构 WHU Food Guide，执行 Phase 4（UI 体验升级）。
+> 继续重构 武大美食指北，执行 Phase 4（UI 体验升级）。
 > 重点：首页重构、食堂详情页重构、地图页接入 Leaflet、移动端底部导航、Framer Motion 动画。
 
 或：
 
-> 继续重构 WHU Food Guide，执行 Phase 5（工程化）。
+> 继续重构 武大美食指北，执行 Phase 5（工程化）。
 > 重点：Docker 优化、CI/CD、Husky、API 文档。

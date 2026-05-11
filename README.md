@@ -1,4 +1,4 @@
-# 珞珈美食指南 — WHU Food Guide
+# 武大美食指北 — WHU Food Guide
 
 <p align="center">
   <img src="https://img.shields.io/badge/Next.js-16-black" alt="Next.js 16" />
@@ -232,4 +232,4 @@ npm start
 
 ## License
 
-MIT © WHU Food Guide Team
+MIT © 武大美食指北 Team

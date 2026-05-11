@@ -11,7 +11,7 @@ export function StructuredData({ type, data }: StructuredDataProps) {
       "@context": "https://schema.org",
       "@type": "WebSite",
       name: "武大美食指北",
-      alternateName: "WHU Food Guide",
+      alternateName: "武大美食指北",
       url: "https://whu-food.vercel.app",
       description: "武汉大学校园美食平台 — 分区浏览、美食地图、排行榜",
       potentialAction: {

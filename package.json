@@ -2,7 +2,7 @@
   "name": "whu-food-guide",
   "version": "2.0.0",
   "private": true,
-  "description": "AI Native 智慧校园美食平台 — 武汉大学美食指南",
+  "description": "AI Native 智慧校园美食平台 — 武大美食指北",
   "scripts": {
     "dev": "next dev",
     "build": "npx prisma generate && next build",
