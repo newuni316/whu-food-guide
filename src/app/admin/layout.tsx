@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, UtensilsCrossed, MessageSquare, Users, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, MessageSquare, Users, ArrowLeft, Soup } from 'lucide-react';
 
 export const metadata = {
     title: '管理后台 — 武大美食指北',
@@ -10,6 +10,7 @@ export const metadata = {
 const NAV_ITEMS = [
     { href: '/admin', label: '数据概览', icon: LayoutDashboard },
     { href: '/admin/canteens', label: '食堂管理', icon: UtensilsCrossed },
+    { href: '/admin/dishes', label: '菜品管理', icon: Soup },
     { href: '/admin/reviews', label: '评论审核', icon: MessageSquare },
     { href: '/admin/users', label: '用户管理', icon: Users },
 ];

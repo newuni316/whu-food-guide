@@ -11,7 +11,15 @@ const CAMPUS_COLORS: Record<string, string> = {
   工学部: "#16a34a",
   信息学部: "#9333ea",
   医学部: "#dc2626",
-  周边商圈: "#f59e0b",
+  广八路: "#f59e0b",
+  银泰: "#f97316",
+  街道口: "#eab308",
+  光谷: "#84cc16",
+  楚河汉街: "#14b8a6",
+  徐东: "#06b6d4",
+  虎泉: "#8b5cf6",
+  亚贸: "#ec4899",
+  群光: "#f43f5e",
 }
 
 function getCampusColor(campus: string): string {

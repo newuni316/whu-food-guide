@@ -78,7 +78,8 @@ describe("getCampusLabel", () => {
     expect(getCampusLabel("gongxue")).toBe("工学部")
     expect(getCampusLabel("xinxixue")).toBe("信息学部")
     expect(getCampusLabel("yixue")).toBe("医学部")
-    expect(getCampusLabel("surroundings")).toBe("周边商圈")
+    expect(getCampusLabel("guangbalu")).toBe("广八路")
+    expect(getCampusLabel("yintai")).toBe("银泰")
   })
 
   it("returns input for unknown campus", () => {

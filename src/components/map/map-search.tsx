@@ -17,7 +17,15 @@ const CAMPUS_OPTIONS = [
   { code: "工学部", label: "工学部" },
   { code: "信息学部", label: "信息学部" },
   { code: "医学部", label: "医学部" },
-  { code: "周边商圈", label: "周边" },
+  { code: "广八路", label: "广八路" },
+  { code: "银泰", label: "银泰" },
+  { code: "街道口", label: "街道口" },
+  { code: "光谷", label: "光谷" },
+  { code: "楚河汉街", label: "楚河汉街" },
+  { code: "徐东", label: "徐东" },
+  { code: "虎泉", label: "虎泉" },
+  { code: "亚贸", label: "亚贸" },
+  { code: "群光", label: "群光" },
 ]
 
 export function MapSearch({ onSearch, onCampusFilter, onLocate, activeCampus }: MapSearchProps) {

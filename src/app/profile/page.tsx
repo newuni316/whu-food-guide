@@ -245,6 +245,18 @@ export default function ProfilePage() {
                                     <div className="text-xs text-muted-foreground">发现新口味</div>
                                 </div>
                             </button>
+                            {(profile.role === 'admin' || profile.role === 'superadmin') && (
+                                <button
+                                    onClick={() => router.push('/admin')}
+                                    className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted transition-colors"
+                                >
+                                    <Settings className="h-5 w-5 text-primary" />
+                                    <div className="text-left">
+                                        <div className="font-medium text-sm">管理后台</div>
+                                        <div className="text-xs text-muted-foreground">管理食堂与内容</div>
+                                    </div>
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

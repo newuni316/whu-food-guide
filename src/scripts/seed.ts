@@ -1,7 +1,7 @@
 /**
  * 种子数据脚本
  *
- * 导入食堂/菜品数据，创建测试用户，生成排行榜和模拟评价。
+ * 导入食堂/菜品数据，创建测试用户，生成排行榜。
  * 使用新的 Prisma Schema（Campus/Canteen/Window/Dish）。
  */
 
@@ -48,7 +48,15 @@ const CAMPUSES = [
     { name: '工学部', code: 'gongxue', order: 2 },
     { name: '信息学部', code: 'xinxixue', order: 3 },
     { name: '医学部', code: 'yixue', order: 4 },
-    { name: '周边商圈', code: 'surroundings', order: 5 },
+    { name: '广八路', code: 'guangbalu', order: 5 },
+    { name: '银泰', code: 'yintai', order: 6 },
+    { name: '街道口', code: 'jiedaokou', order: 7 },
+    { name: '光谷', code: 'guanggu', order: 8 },
+    { name: '楚河汉街', code: 'chuhehanjie', order: 9 },
+    { name: '徐东', code: 'xudong', order: 10 },
+    { name: '虎泉', code: 'huquan', order: 11 },
+    { name: '亚贸', code: 'yamao', order: 12 },
+    { name: '群光', code: 'qunguang', order: 13 },
 ];
 
 const RANKING_TYPES = [
@@ -74,38 +82,34 @@ const NUTRITION_TEMPLATES: Record<string, { calories: number; protein: number; f
     '咖啡': { calories: 120, protein: 2, fat: 4, carbs: 18 },
 };
 
-/** 模拟评价模板 */
-const REVIEW_TEMPLATES = [
-    { content: '味道不错，性价比很高，推荐！', rating: 5, sentiment: 0.8 },
-    { content: '分量很足，吃得饱饱的', rating: 4, sentiment: 0.6 },
-    { content: '环境一般，但菜品味道好', rating: 4, sentiment: 0.4 },
-    { content: '排队时间有点长，但值得等', rating: 4, sentiment: 0.3 },
-    { content: '价格实惠，学生党的福音', rating: 5, sentiment: 0.7 },
-    { content: '菜品有点咸，希望改进', rating: 3, sentiment: -0.2 },
-    { content: '服务态度很好，会再来', rating: 5, sentiment: 0.7 },
-    { content: '适合减脂，低卡高蛋白', rating: 4, sentiment: 0.5 },
-    { content: '和同学聚餐的好去处', rating: 5, sentiment: 0.8 },
-    { content: '味道一般般，没有特别惊艳', rating: 3, sentiment: 0.0 },
-    { content: '分量变少了，但味道提升了', rating: 4, sentiment: 0.2 },
-    { content: '深夜还能吃到，太幸福了', rating: 5, sentiment: 0.9 },
-    { content: '价格偏贵，不过食材新鲜', rating: 3, sentiment: 0.1 },
-    { content: '窗口阿姨人很好，每次都多打菜', rating: 5, sentiment: 0.8 },
-    { content: '吃了一学期了，百吃不腻', rating: 5, sentiment: 0.9 },
-];
-
 // ──────────────────────────────────────────────
 // 辅助函数
 // ──────────────────────────────────────────────
 
-function mapCampusCode(campus: string): string {
+function mapCampusCode(campus: string, area?: string): string {
     const map: Record<string, string> = {
         wenli: 'wenli',
         gongxue: 'gongxue',
         xinxixue: 'xinxixue',
         yixue: 'yixue',
-        surroundings: 'surroundings',
     };
-    return map[campus] || 'wenli';
+    if (map[campus]) return map[campus];
+
+    // 周边商圈按 area 字段映射到独立板块
+    const areaMap: Record<string, string> = {
+        '广八路': 'guangbalu',
+        '银泰创意城': 'yintai',
+        '银泰': 'yintai',
+        '街道口': 'jiedaokou',
+        '光谷': 'guanggu',
+        '楚河汉街': 'chuhehanjie',
+        '徐东': 'xudong',
+        '虎泉': 'huquan',
+        '亚贸': 'yamao',
+        '群光': 'qunguang',
+    };
+    if (area && areaMap[area]) return areaMap[area];
+    return 'guangbalu';
 }
 
 function parseHours(hoursStr: string): Record<string, { open: string; close: string }> {
@@ -260,17 +264,13 @@ async function seedCanteensAndDishes(
         const filePath = path.join(DATA_DIR, file);
         const data: RestaurantData = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 
-        const campusId = campusMap.get(mapCampusCode(data.campus));
+        const campusId = campusMap.get(mapCampusCode(data.campus, data.area));
         if (!campusId) {
             console.warn(`  ⚠️ 跳过 ${data.name}: 找不到校区 ${data.campus}`);
             continue;
         }
 
         console.log(`  导入: ${data.name}`);
-
-        const avgRating = data.rating
-            ? parseFloat(((data.rating.taste + data.rating.environment + data.rating.value) / 3).toFixed(1))
-            : 4.0;
 
         // 创建/更新食堂
         const canteen = await prisma.canteen.upsert({
@@ -285,7 +285,8 @@ async function seedCanteensAndDishes(
                 hours: parseHours(data.hours),
                 images: data.images || [],
                 tags: data.tags,
-                avgRating,
+                avgRating: 0,
+                reviewCount: 0,
                 description: data.review || null,
             },
             create: {
@@ -299,7 +300,8 @@ async function seedCanteensAndDishes(
                 hours: parseHours(data.hours),
                 images: data.images || [],
                 tags: data.tags,
-                avgRating,
+                avgRating: 0,
+                reviewCount: 0,
                 description: data.review || null,
             },
         });
@@ -315,7 +317,8 @@ async function seedCanteensAndDishes(
                 priceMax: data.price_range[1] || 50,
                 tags: data.tags,
                 description: data.review || null,
-                avgRating,
+                avgRating: 0,
+                reviewCount: 0,
             },
             create: {
                 id: windowId,
@@ -326,7 +329,8 @@ async function seedCanteensAndDishes(
                 priceMax: data.price_range[1] || 50,
                 tags: data.tags,
                 description: data.review || null,
-                avgRating,
+                avgRating: 0,
+                reviewCount: 0,
             },
         });
 
@@ -349,7 +353,8 @@ async function seedCanteensAndDishes(
                     protein: nutrition.protein,
                     fat: nutrition.fat,
                     carbs: nutrition.carbs,
-                    avgRating: parseFloat((avgRating + (Math.random() * 0.4 - 0.2)).toFixed(1)),
+                    avgRating: 0,
+                    reviewCount: 0,
                 },
                 create: {
                     id: dishId,
@@ -362,7 +367,8 @@ async function seedCanteensAndDishes(
                     protein: nutrition.protein,
                     fat: nutrition.fat,
                     carbs: nutrition.carbs,
-                    avgRating: parseFloat((avgRating + (Math.random() * 0.4 - 0.2)).toFixed(1)),
+                    avgRating: 0,
+                    reviewCount: 0,
                     description: `${dishName}，${data.name}的招牌菜品`,
                 },
             });
@@ -370,7 +376,7 @@ async function seedCanteensAndDishes(
             dishIds.push(dishId);
         }
 
-        results.push({ canteenId: canteen.id, name: data.name, avgRating, dishIds });
+        results.push({ canteenId: canteen.id, name: data.name, avgRating: 0, dishIds });
     }
 
     console.log(`  ✅ 导入了 ${results.length} 个食堂`);
@@ -428,77 +434,6 @@ async function seedRankings(
     console.log(`  ✅ 创建了 ${RANKING_TYPES.length} 种排行榜`);
 }
 
-async function seedReviews(dishIds: string[]) {
-    console.log('\n💬 创建模拟评价...');
-
-    // 获取测试用户
-    const users = await prisma.user.findMany({
-        where: { role: 'user' },
-        select: { id: true },
-    });
-
-    if (users.length === 0) {
-        console.log('  ⚠️ 没有用户，跳过评价');
-        return;
-    }
-
-    let reviewCount = 0;
-
-    for (const dishId of dishIds) {
-        // 每个菜品随机 2-4 条评价
-        const count = 2 + Math.floor(Math.random() * 3);
-        const selectedReviews = REVIEW_TEMPLATES
-            .sort(() => Math.random() - 0.5)
-            .slice(0, count);
-
-        for (const review of selectedReviews) {
-            const user = users[Math.floor(Math.random() * users.length)];
-            const keywords = extractSimpleKeywords(review.content);
-
-            await prisma.review.create({
-                data: {
-                    content: review.content,
-                    rating: review.rating,
-                    sentiment: review.sentiment,
-                    keywords,
-                    userId: user.id,
-                    dishId,
-                },
-            });
-            reviewCount++;
-        }
-    }
-
-    // 更新菜品的 reviewCount
-    for (const dishId of dishIds) {
-        const count = await prisma.review.count({ where: { dishId } });
-        await prisma.dish.update({
-            where: { id: dishId },
-            data: { reviewCount: count },
-        });
-    }
-
-    console.log(`  ✅ 创建了 ${reviewCount} 条评价`);
-}
-
-/** 简单关键词提取（不依赖 LLM） */
-function extractSimpleKeywords(text: string): string[] {
-    const keywords: string[] = [];
-    const patterns = [
-        /好吃|不错|推荐|很棒|美味|划算|实惠|量大/,
-        /难吃|差|失望|贵|少|慢|一般/,
-        /减脂|高蛋白|素食|辣|早餐|夜宵/,
-        /环境|服务|排队|干净|新鲜/,
-    ];
-
-    for (const pattern of patterns) {
-        const match = text.match(pattern);
-        if (match) keywords.push(match[0]);
-    }
-
-    return keywords.slice(0, 3);
-}
-
 // ──────────────────────────────────────────────
 // 主函数
 // ──────────────────────────────────────────────
@@ -518,11 +453,7 @@ async function seed() {
     // 4. 创建排行榜
     await seedRankings(canteens);
 
-    // 5. 创建模拟评价
-    const allDishIds = canteens.flatMap(c => c.dishIds);
-    await seedReviews(allDishIds);
-
-    // 6. 尝试生成 embeddings（如果 API key 可用）
+    // 5. 尝试生成 embeddings（如果 API key 可用）
     if (process.env.OPENAI_API_KEY) {
         console.log('\n🧮 生成菜品向量嵌入...');
         try {

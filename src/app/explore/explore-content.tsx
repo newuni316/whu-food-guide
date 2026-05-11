@@ -7,12 +7,20 @@ import { Badge } from '@/components/ui/badge';
 import type { SearchResult } from '@/types';
 
 const CAMPUS_OPTIONS = [
-    { code: '', label: '全部校区' },
+    { code: '', label: '全部板块' },
     { code: 'wenli', label: '文理学部' },
     { code: 'gongxue', label: '工学部' },
     { code: 'xinxixue', label: '信息学部' },
     { code: 'yixue', label: '医学部' },
-    { code: 'surroundings', label: '周边商圈' },
+    { code: 'guangbalu', label: '广八路' },
+    { code: 'yintai', label: '银泰' },
+    { code: 'jiedaokou', label: '街道口' },
+    { code: 'guanggu', label: '光谷' },
+    { code: 'chuhehanjie', label: '楚河汉街' },
+    { code: 'xudong', label: '徐东' },
+    { code: 'huquan', label: '虎泉' },
+    { code: 'yamao', label: '亚贸' },
+    { code: 'qunguang', label: '群光' },
 ];
 
 const SORT_OPTIONS = [
@@ -145,7 +153,7 @@ export default function ExploreContent() {
             {showFilters && (
                 <div className="rounded-xl border bg-card p-4 mb-6 space-y-4">
                     <div>
-                        <label className="text-sm font-medium mb-2 block">校区</label>
+                        <label className="text-sm font-medium mb-2 block">板块</label>
                         <div className="flex flex-wrap gap-2">
                             {CAMPUS_OPTIONS.map(opt => (
                                 <button

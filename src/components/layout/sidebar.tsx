@@ -52,8 +52,8 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Gift,
 }
 
-const mainNavItems = [
-  { href: "/", label: "首页", icon: Home },
+const homeNavItem = { href: "/", label: "首页", icon: Home }
+const otherNavItems = [
   { href: "/explore", label: "探索", icon: Compass },
   { href: "/rankings", label: "热榜", icon: TrendingUp },
   { href: "/game", label: "美食PK", icon: Gamepad2 },
@@ -119,7 +119,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="搜索商圈..."
+            placeholder="搜索地点..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-lg border border-border bg-muted/50 py-2 pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
@@ -127,18 +127,16 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
-      {/* Main Nav */}
-      <div className="px-3 pb-2">
-        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2 py-1.5">
-          导航
-        </div>
-        {mainNavItems.map((item) => {
-          const Icon = item.icon
-          const isActive = pathname === item.href
+      {/* Home + Area Navigation */}
+      <div className="flex-1 overflow-y-auto px-3 pb-2 scrollbar-hide">
+        {/* 首页 */}
+        {(() => {
+          const Icon = homeNavItem.icon
+          const isActive = pathname === homeNavItem.href
           return (
             <Link
-              key={item.href}
-              href={item.href}
+              key={homeNavItem.href}
+              href={homeNavItem.href}
               onClick={onNavigate}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
@@ -148,19 +146,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              {item.label}
+              {homeNavItem.label}
             </Link>
           )
-        })}
-      </div>
+        })()}
 
-      {/* Divider */}
-      <div className="mx-3 border-t border-border/50" />
-
-      {/* Area Navigation */}
-      <div className="flex-1 overflow-y-auto px-3 py-2 scrollbar-hide">
-        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2 py-1.5">
-          商圈
+        {/* 美味地点 */}
+        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2 py-1.5 mt-2">
+          美味地点
         </div>
         {filteredItems.map((group) => {
           const GroupIcon = iconMap[group.icon] || MapPin
@@ -291,24 +284,35 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             </div>
           )
         })}
-      </div>
 
-      {/* Footer */}
-      <div className="px-3 py-3 border-t border-border/50">
-        <Link
-          href="/admin"
-          onClick={onNavigate}
-          className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors"
-        >
-          <Settings className="h-4 w-4" />
-          管理后台
-        </Link>
+        {/* 其他导航 */}
+        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2 py-1.5 mt-2">
+          导航
+        </div>
+        {otherNavItems.map((item) => {
+          const Icon = item.icon
+          const isActive = pathname === item.href
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onNavigate}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+              )}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              {item.label}
+            </Link>
+          )
+        })}
       </div>
     </div>
   )
 }
-
-import { Settings } from "lucide-react"
 
 /** Desktop sidebar */
 export function Sidebar() {

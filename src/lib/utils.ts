@@ -38,7 +38,15 @@ export function getCampusLabel(campus: string): string {
     gongxue: "工学部",
     xinxixue: "信息学部",
     yixue: "医学部",
-    surroundings: "周边商圈",
+    guangbalu: "广八路",
+    yintai: "银泰",
+    jiedaokou: "街道口",
+    guanggu: "光谷",
+    chuhehanjie: "楚河汉街",
+    xudong: "徐东",
+    huquan: "虎泉",
+    yamao: "亚贸",
+    qunguang: "群光",
   }
   return map[campus] || campus
 }

@@ -239,7 +239,7 @@ export default function AdminCanteensPage() {
                             <thead className="bg-muted/50">
                                 <tr>
                                     <th className="text-left p-3 font-medium">食堂</th>
-                                    <th className="text-left p-3 font-medium">校区</th>
+                                    <th className="text-left p-3 font-medium">板块</th>
                                     <th className="text-left p-3 font-medium">评分</th>
                                     <th className="text-left p-3 font-medium">窗口</th>
                                     <th className="text-left p-3 font-medium">评价</th>
@@ -351,12 +351,12 @@ export default function AdminCanteensPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="text-sm font-medium mb-1 block">校区 *</label>
+                            <label className="text-sm font-medium mb-1 block">板块 *</label>
                             <Select
                                 value={form.campusId}
                                 onChange={e => setForm(f => ({ ...f, campusId: e.target.value }))}
                             >
-                                <option value="">选择校区</option>
+                                <option value="">选择板块</option>
                                 {campuses.map(c => (
                                     <option key={c.id} value={c.id}>{c.name}</option>
                                 ))}

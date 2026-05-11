@@ -204,8 +204,15 @@ function mapLocationToCampus(location: string): string | undefined {
         '枫园': 'wenli',
         '樱园': 'wenli',
         '湖滨': 'wenli',
-        '广八路': 'surroundings',
-        '街道口': 'surroundings',
+        '广八路': 'guangbalu',
+        '街道口': 'jiedaokou',
+        '银泰': 'yintai',
+        '光谷': 'guanggu',
+        '楚河汉街': 'chuhehanjie',
+        '徐东': 'xudong',
+        '虎泉': 'huquan',
+        '亚贸': 'yamao',
+        '群光': 'qunguang',
     };
     return mapping[location];
 }

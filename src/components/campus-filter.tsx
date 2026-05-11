@@ -10,7 +10,15 @@ const campuses = [
   { value: "gongxue", label: "工学部" },
   { value: "xinxixue", label: "信息学部" },
   { value: "yixue", label: "医学部" },
-  { value: "surroundings", label: "周边商圈" },
+  { value: "guangbalu", label: "广八路" },
+  { value: "yintai", label: "银泰" },
+  { value: "jiedaokou", label: "街道口" },
+  { value: "guanggu", label: "光谷" },
+  { value: "chuhehanjie", label: "楚河汉街" },
+  { value: "xudong", label: "徐东" },
+  { value: "huquan", label: "虎泉" },
+  { value: "yamao", label: "亚贸" },
+  { value: "qunguang", label: "群光" },
 ]
 
 export function CampusFilter() {

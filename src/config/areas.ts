@@ -105,7 +105,7 @@ export const AREA_CONFIG: CampusGroup[] = [
         name: "广八路",
         icon: "MapPin",
         description: "广八路美食街，武大学生最常去的校外觅食地",
-        campus: "surroundings",
+        campus: "guangbalu",
         isDefault: true,
         order: 1,
       },
@@ -122,7 +122,7 @@ export const AREA_CONFIG: CampusGroup[] = [
         name: "银泰创意城",
         icon: "ShoppingBag",
         description: "银泰创意城美食广场",
-        campus: "surroundings",
+        campus: "yintai",
         isDefault: true,
         order: 1,
       },
@@ -130,7 +130,7 @@ export const AREA_CONFIG: CampusGroup[] = [
   },
   {
     id: "more",
-    name: "更多商圈",
+    name: "更多地点",
     icon: "MoreHorizontal",
     order: 7,
     areas: [
@@ -139,7 +139,7 @@ export const AREA_CONFIG: CampusGroup[] = [
         name: "街道口",
         icon: "Navigation",
         description: "街道口商圈美食",
-        campus: "surroundings",
+        campus: "jiedaokou",
         order: 1,
       },
       {
@@ -147,7 +147,7 @@ export const AREA_CONFIG: CampusGroup[] = [
         name: "光谷",
         icon: "Zap",
         description: "光谷广场及周边美食",
-        campus: "surroundings",
+        campus: "guanggu",
         order: 2,
       },
       {
@@ -155,7 +155,7 @@ export const AREA_CONFIG: CampusGroup[] = [
         name: "楚河汉街",
         icon: "Building",
         description: "楚河汉街餐饮聚集区",
-        campus: "surroundings",
+        campus: "chuhehanjie",
         order: 3,
       },
       {
@@ -163,7 +163,7 @@ export const AREA_CONFIG: CampusGroup[] = [
         name: "徐东",
         icon: "Store",
         description: "徐东商圈美食",
-        campus: "surroundings",
+        campus: "xudong",
         order: 4,
       },
       {
@@ -171,7 +171,7 @@ export const AREA_CONFIG: CampusGroup[] = [
         name: "虎泉",
         icon: "Coffee",
         description: "虎泉夜市及周边小吃",
-        campus: "surroundings",
+        campus: "huquan",
         order: 5,
       },
       {
@@ -179,7 +179,7 @@ export const AREA_CONFIG: CampusGroup[] = [
         name: "亚贸",
         icon: "ShoppingCart",
         description: "亚贸广场周边美食",
-        campus: "surroundings",
+        campus: "yamao",
         order: 6,
       },
       {
@@ -187,7 +187,7 @@ export const AREA_CONFIG: CampusGroup[] = [
         name: "群光",
         icon: "Gift",
         description: "群光广场美食",
-        campus: "surroundings",
+        campus: "qunguang",
         order: 7,
       },
     ],
