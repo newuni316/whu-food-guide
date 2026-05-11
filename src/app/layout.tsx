@@ -58,7 +58,7 @@ export default function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
-      <body className="min-h-full bg-background text-foreground antialiased">
+      <body suppressHydrationWarning className="min-h-full bg-background text-foreground antialiased">
         <Providers>
           <div className="flex min-h-screen">
             <Sidebar />
