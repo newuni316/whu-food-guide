@@ -48,6 +48,14 @@ export const CacheKeys = {
     search: {
         semantic: (query: string) => `search:semantic:${query}`,
     },
+
+    // 管理后台
+    admin: {
+        dashboardStats: 'admin:dashboard:stats',
+        dashboardSentiment: 'admin:dashboard:sentiment',
+        dashboardRecommend: 'admin:dashboard:recommend',
+        dashboardNegative: 'admin:dashboard:negative',
+    },
 } as const;
 
 /** 缓存 TTL（秒） */

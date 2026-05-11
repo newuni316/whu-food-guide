@@ -1,33 +1,41 @@
 import { prisma } from '@/lib/prisma';
-import { withRole, successResponse, createMethodHandler } from '@/lib/api/middleware';
+import { withRole, successResponse, createPagination, parsePagination } from '@/lib/api/middleware';
 import { AppError, ErrorCode } from '@/lib/errors';
+import { logAdmin, invalidateDashboardCache } from '@/lib/admin-log';
 
 export const dynamic = 'force-dynamic';
 
 const GET = withRole('admin', async (request) => {
     const url = new URL(request.url);
     const search = url.searchParams.get('search') || '';
+    const campusId = url.searchParams.get('campusId') || '';
+    const { page, pageSize, skip } = parsePagination(url);
 
-    const where = search
-        ? {
-            deletedAt: null,
-            OR: [
-                { name: { contains: search, mode: 'insensitive' as const } },
-                { slug: { contains: search, mode: 'insensitive' as const } },
-            ],
-        }
-        : { deletedAt: null };
+    const where: Record<string, unknown> = { deletedAt: null };
+    if (search) {
+        where.OR = [
+            { name: { contains: search, mode: 'insensitive' as const } },
+            { slug: { contains: search, mode: 'insensitive' as const } },
+            { address: { contains: search, mode: 'insensitive' as const } },
+        ];
+    }
+    if (campusId) where.campusId = campusId;
 
-    const canteens = await prisma.canteen.findMany({
-        where,
-        include: {
-            campus: true,
-            _count: { select: { windows: true, reviews: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-    });
+    const [canteens, total] = await Promise.all([
+        prisma.canteen.findMany({
+            where,
+            include: {
+                campus: true,
+                _count: { select: { windows: true, reviews: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take: pageSize,
+        }),
+        prisma.canteen.count({ where }),
+    ]);
 
-    return successResponse(canteens);
+    return successResponse(canteens, createPagination(page, pageSize, total));
 });
 
 const POST = withRole('admin', async (request) => {
@@ -55,6 +63,9 @@ const POST = withRole('admin', async (request) => {
         },
         include: { campus: true },
     });
+
+    await logAdmin(request, 'create_canteen', canteen.id, { name, slug });
+    await invalidateDashboardCache();
 
     return successResponse(canteen, undefined, 201);
 });

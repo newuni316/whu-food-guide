@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { withRole, successResponse } from '@/lib/api/middleware';
 import { AppError, ErrorCode } from '@/lib/errors';
+import { logAdmin, invalidateDashboardCache } from '@/lib/admin-log';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,14 @@ const PUT = withRole('admin', async (request, context) => {
         },
     });
 
+    await logAdmin(request, 'update_dish', id, { name: dish.name });
+    await invalidateDashboardCache();
+
+    // TODO: 内容变更后触发 DishEmbedding 重新生成
+    // if (name !== undefined || description !== undefined || category !== undefined) {
+    //     await generateDishEmbedding(id);
+    // }
+
     return successResponse(dish);
 });
 
@@ -48,6 +57,9 @@ const DELETE = withRole('admin', async (request, context) => {
         where: { id },
         data: { deletedAt: new Date() },
     });
+
+    await logAdmin(request, 'delete_dish', id, { name: existing.name });
+    await invalidateDashboardCache();
 
     return successResponse({ id });
 });

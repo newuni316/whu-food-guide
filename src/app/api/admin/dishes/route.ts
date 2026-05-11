@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
-import { withRole, successResponse, createPagination, parsePagination, createMethodHandler } from '@/lib/api/middleware';
+import { withRole, successResponse, createPagination, parsePagination } from '@/lib/api/middleware';
 import { AppError, ErrorCode } from '@/lib/errors';
+import { logAdmin, invalidateDashboardCache } from '@/lib/admin-log';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,6 +70,12 @@ const POST = withRole('admin', async (request) => {
             window: { include: { canteen: true } },
         },
     });
+
+    await logAdmin(request, 'create_dish', dish.id, { name, windowId });
+    await invalidateDashboardCache();
+
+    // TODO: 触发 DishEmbedding 异步生成，确保 RAG 向量数据同步
+    // await generateDishEmbedding(dish.id);
 
     return successResponse(dish, undefined, 201);
 });

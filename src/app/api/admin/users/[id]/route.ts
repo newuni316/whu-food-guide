@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { withRole, successResponse } from '@/lib/api/middleware';
 import { AppError, ErrorCode } from '@/lib/errors';
+import { logAdmin, invalidateDashboardCache } from '@/lib/admin-log';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,9 @@ const PATCH = withRole('superadmin', async (request, context) => {
         data: { role },
     });
 
+    await logAdmin(request, 'update_user_role', id, { name: existing.name, from: existing.role, to: role });
+    await invalidateDashboardCache();
+
     return successResponse({ id: user.id, role: user.role });
 });
 
@@ -40,6 +44,9 @@ const DELETE = withRole('admin', async (request, context) => {
         where: { id },
         data: { deletedAt: new Date() },
     });
+
+    await logAdmin(request, 'delete_user', id, { name: existing.name, email: existing.email });
+    await invalidateDashboardCache();
 
     return successResponse({ id });
 });
