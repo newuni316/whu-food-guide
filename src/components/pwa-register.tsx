@@ -10,6 +10,13 @@ export function PWARegister() {
           registration.unregister()
         }
       }).then(() => {
+        // Clear all caches to prevent stale chunks from being served
+        if ("caches" in window) {
+          return caches.keys().then((names) =>
+            Promise.all(names.map((name) => caches.delete(name)))
+          )
+        }
+      }).then(() => {
         navigator.serviceWorker
           .register("/sw.js")
           .catch(() => {})
