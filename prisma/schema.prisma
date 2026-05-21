@@ -440,3 +440,23 @@ model AdminLog {
   @@index([adminId])
   @@index([createdAt(sort: Desc)])
 }
+
+// ──────────────────────────────────────────────
+// Restaurant — 外部餐厅（美食PK用）
+// ──────────────────────────────────────────────
+
+model Restaurant {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  price     Float    @default(0)
+  tags      String[]
+  image     String?
+  elo       Int      @default(1200)
+  wins      Int      @default(0)
+  matches   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([elo(sort: Desc)])
+}
