@@ -29,7 +29,7 @@ const PATCH = withRole('superadmin', async (request, context) => {
     return successResponse({ id: user.id, role: user.role });
 });
 
-const DELETE = withRole('admin', async (request, context) => {
+const DELETE = withRole('superadmin', async (request, context) => {
     const params = await context!.params!;
     const id = params.id;
 

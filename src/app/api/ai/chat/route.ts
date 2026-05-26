@@ -7,6 +7,33 @@ import { checkRateLimit, getClientIp } from '@/lib/cache/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
+type ChatMessage = {
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+};
+
+function getChatTitle(messages: { content?: string }[]) {
+    return messages[0]?.content?.slice(0, 50) || '新对话';
+}
+
+async function saveAiChat(
+    userId: string | undefined,
+    messages: ChatMessage[],
+    assistantContent: string,
+    context: unknown,
+) {
+    if (!userId) return;
+
+    await prisma.aiChat.create({
+        data: {
+            userId,
+            title: getChatTitle(messages),
+            messages: [...messages, { role: 'assistant', content: assistantContent }],
+            context: context || null,
+        },
+    });
+}
+
 const POST = withAuth(async (request: AuthenticatedRequest) => {
     // 限流
     const ip = getClientIp(request);
@@ -30,6 +57,11 @@ const POST = withAuth(async (request: AuthenticatedRequest) => {
     if (!messages || !Array.isArray(messages)) {
         throw new ValidationError('消息格式不正确');
     }
+
+    const chatMessages = messages.map((m: { role: string; content: string }) => ({
+        role: m.role as 'system' | 'user' | 'assistant',
+        content: m.content,
+    })) as ChatMessage[];
 
     const client = getLLMClient();
 
@@ -56,10 +88,7 @@ const POST = withAuth(async (request: AuthenticatedRequest) => {
 
     const llmMessages = [
         { role: 'system' as const, content: systemMessage },
-        ...messages.map((m: { role: string; content: string }) => ({
-            role: m.role as 'system' | 'user' | 'assistant',
-            content: m.content,
-        })),
+        ...chatMessages,
     ];
 
     const userId = request.session.user.id;
@@ -78,23 +107,15 @@ const POST = withAuth(async (request: AuthenticatedRequest) => {
                     }
                     controller.enqueue(encoder.encode('data: [DONE]\n\n'));
                 } catch {
-                    const fallback = '抱歉，AI 服务暂时不可用。';
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: fallback })}\n\n`));
+                    if (!fullContent) {
+                        const fallback = '抱歉，AI 服务暂时不可用。';
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: fallback })}\n\n`));
+                        fullContent = fallback;
+                    }
                     controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-                    fullContent = fallback;
                 } finally {
                     controller.close();
-                    // 异步保存对话记录
-                    if (userId) {
-                        prisma.aiChat.create({
-                            data: {
-                                userId,
-                                title: messages[0]?.content?.slice(0, 50) || '新对话',
-                                messages,
-                                context: context || null,
-                            },
-                        }).catch(() => {});
-                    }
+                    saveAiChat(userId, chatMessages, fullContent, context).catch(() => {});
                 }
             },
         });
@@ -116,16 +137,7 @@ const POST = withAuth(async (request: AuthenticatedRequest) => {
         content = '抱歉，AI 服务暂时不可用，请稍后再试。你也可以直接浏览食堂和菜品信息。';
     }
 
-    if (userId) {
-        await prisma.aiChat.create({
-            data: {
-                userId,
-                title: messages[0]?.content?.slice(0, 50) || '新对话',
-                messages,
-                context: context || null,
-            },
-        });
-    }
+    await saveAiChat(userId, chatMessages, content, context);
 
     return Response.json({ success: true, data: { content } });
 });

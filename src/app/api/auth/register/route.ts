@@ -1,28 +1,27 @@
 import { createMethodHandler, successResponse } from '@/lib/api/middleware';
-import { ValidationError, AppError, ErrorCode } from '@/lib/errors';
+import { AppError, ErrorCode } from '@/lib/errors';
+import { checkRateLimit, getClientIp } from '@/lib/cache/rate-limit';
 import { prisma } from '@/lib/prisma';
+import { validateRequest } from '@/lib/validation';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
 const registerSchema = z.object({
-    name: z.string().min(1, '请输入姓名').max(50),
-    email: z.string().email('请输入有效的邮箱'),
+    name: z.string().trim().min(1, '请输入姓名').max(50),
+    email: z.string().trim().email('请输入有效的邮箱').transform(email => email.toLowerCase()),
     password: z.string().min(6, '密码至少6位').max(100),
 });
 
 export const POST = createMethodHandler({
     POST: async (request) => {
-        const body = await request.json();
-        const parsed = registerSchema.safeParse(body);
-
-        if (!parsed.success) {
-            throw new ValidationError(
-                parsed.error.issues[0]?.message || '参数校验失败',
-                { issues: parsed.error.issues },
-            );
+        const ip = getClientIp(request);
+        const rateLimit = await checkRateLimit(`auth:register:${ip}`, 5, 15 * 60);
+        if (!rateLimit.allowed) {
+            throw new AppError(ErrorCode.RATE_LIMITED, '注册过于频繁，请稍后再试');
         }
 
-        const { name, email, password } = parsed.data;
+        const body = validateRequest(registerSchema, await request.json());
+        const { email, name, password } = body;
 
         const existing = await prisma.user.findUnique({ where: { email } });
         if (existing) {

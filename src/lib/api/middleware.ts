@@ -87,7 +87,7 @@ export function withAuth(handler: AuthenticatedRouteHandler): RouteHandler {
             const session = await getSession();
             // 使用 Object.assign 保留原始 request，附加类型安全的 session
             const authReq = Object.assign(request, { session }) as AuthenticatedRequest;
-            return handler(authReq, context);
+            return await handler(authReq, context);
         } catch (error) {
             return handleApiError(error);
         }
