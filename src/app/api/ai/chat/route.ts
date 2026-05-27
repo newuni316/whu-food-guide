@@ -1,5 +1,5 @@
 import { withAuth, type AuthenticatedRequest } from '@/lib/api/middleware';
-import { ValidationError, handleApiError } from '@/lib/errors';
+import { ValidationError } from '@/lib/errors';
 import { getLLMClient, SYSTEM_PROMPT } from '@/lib/ai';
 import { retrieveContext, formatContextForLLM } from '@/lib/ai/retriever';
 import { prisma } from '@/lib/prisma';
